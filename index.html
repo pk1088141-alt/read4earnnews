@@ -12,14 +12,41 @@
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen pb-12">
 
+  <!-- Login Modal -->
+  <div id="login-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 w-full max-w-md p-6 rounded-2xl shadow-2xl space-y-4">
+      <div class="text-center">
+        <span class="text-4xl">⚡</span>
+        <h2 class="text-xl font-bold text-white mt-2">Welcome to NewsBuddy</h2>
+        <p class="text-xs text-slate-400 mt-1">Enter your Email or Mobile Number to save your coin earnings.</p>
+      </div>
+      <form id="login-form" onsubmit="handleLogin(event)" class="space-y-3">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Email / Mobile Number</label>
+          <input type="text" id="login-identifier" required placeholder="e.g. user@gmail.com or 9876543210" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg text-sm transition">
+          Continue to Earn
+        </button>
+      </form>
+      <p class="text-[10px] text-slate-500 text-center">🛡️ Protected against bots and multi-account automation.</p>
+    </div>
+  </div>
+
   <!-- Header -->
   <nav class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50 flex justify-between items-center max-w-4xl mx-auto rounded-b-2xl shadow-lg">
     <div class="flex items-center gap-2">
       <span class="text-2xl">⚡</span>
       <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">NewsBuddy</h1>
     </div>
-    <div class="bg-indigo-950 border border-indigo-500/30 px-4 py-1.5 rounded-full">
-      <span class="text-amber-400 font-bold">🪙 <span id="user-coins">0.0</span> Coins</span>
+    <div class="flex items-center gap-3">
+      <div class="text-right hidden sm:block">
+        <p id="user-display-id" class="text-[11px] text-slate-400 font-mono"></p>
+        <button onclick="handleLogout()" class="text-[10px] text-rose-400 hover:underline">Logout</button>
+      </div>
+      <div class="bg-indigo-950 border border-indigo-500/30 px-3.5 py-1.5 rounded-full">
+        <span class="text-amber-400 font-bold text-sm">🪙 <span id="user-coins">0.0</span> Coins</span>
+      </div>
     </div>
   </nav>
 
@@ -36,6 +63,11 @@
           <option value="entertainment">Entertainment</option>
           <option value="sports">Sports</option>
         </select>
+      </div>
+
+      <!-- Anti-Cheat Status Banner -->
+      <div id="anticheat-banner" class="hidden bg-amber-500/10 border border-amber-500/30 text-amber-400 p-3 rounded-xl text-xs font-medium">
+        ⚠️ <span id="anticheat-msg">Anti-cheat active: Only 1 active timer allowed at a time.</span>
       </div>
 
       <!-- Container where live news is injected -->
@@ -96,20 +128,69 @@
   <!-- Application Script -->
   <script>
   const SMARTLINK_URL = 'https://omg10.com/4/11439413';
-  let userId = localStorage.getItem('user_id') || ('user_' + Math.random().toString(36).substr(2, 9));
-  localStorage.setItem('user_id', userId);
-
+  
+  // App State
+  let userId = localStorage.getItem('user_id') || '';
   let coins = parseFloat(localStorage.getItem('user_coins')) || 0.0;
+  let readArticles = JSON.parse(localStorage.getItem('read_articles') || '[]');
+  
+  // Anti-Cheat State Variables
   let timerInterval = null;
   let isTabActive = true;
+  let activeReadingIndex = null;
+  let isTimerRunning = false;
+  let lastReadTime = 0;
 
-  document.addEventListener('visibilitychange', () => { isTabActive = !document.hidden; });
+  // Track Tab Visibility (Anti-Cheat)
+  document.addEventListener('visibilitychange', () => { 
+    isTabActive = !document.hidden; 
+  });
+
+  // Handle Login & Session Management
+  function initAuth() {
+    if (!userId) {
+      document.getElementById('login-modal').classList.remove('hidden');
+    } else {
+      document.getElementById('login-modal').classList.add('hidden');
+      document.getElementById('user-display-id').innerText = `👤 ${userId.substring(0, 14)}...`;
+      updateBalanceUI();
+      fetchLiveNews();
+    }
+  }
+
+  function handleLogin(e) {
+    e.preventDefault();
+    const input = document.getElementById('login-identifier').value.trim();
+    if (!input) return;
+
+    userId = input;
+    localStorage.setItem('user_id', userId);
+    
+    // Load existing user coins or start fresh
+    coins = parseFloat(localStorage.getItem(`coins_${userId}`)) || 0.0;
+    updateBalanceUI();
+
+    initAuth();
+  }
+
+  function handleLogout() {
+    if (isTimerRunning) {
+      alert("Please finish your active reading timer first!");
+      return;
+    }
+    localStorage.removeItem('user_id');
+    location.reload();
+  }
 
   function updateBalanceUI() {
     document.getElementById('user-coins').innerText = coins.toFixed(1);
-    localStorage.setItem('user_coins', coins.toString());
+    if (userId) {
+      localStorage.setItem('user_coins', coins.toString());
+      localStorage.setItem(`coins_${userId}`, coins.toString());
+    }
   }
 
+  // Fetch Live RSS News
   async function fetchLiveNews() {
     const container = document.getElementById('news-container');
     const category = document.getElementById('news-category').value;
@@ -125,6 +206,7 @@
 
       container.innerHTML = '';
       data.items.slice(0, 10).forEach((art, index) => {
+        const isAlreadyRead = readArticles.includes(art.link);
         const card = document.createElement('article');
         card.className = "bg-slate-800 border border-slate-700/60 p-4 rounded-xl shadow-md space-y-3";
         
@@ -134,9 +216,13 @@
             <div id="timer-box-${index}" class="text-xs text-amber-400 hidden font-mono">
               ⏱️ Active reading: <span id="seconds-${index}">15</span>s left
             </div>
-            <button id="read-btn-${index}" onclick="startReadingArticle(${index}, '${art.link}')" class="ml-auto bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-3.5 py-2 rounded-lg transition">
-              Read & Earn (+0.2 Coins)
-            </button>
+            ${
+              isAlreadyRead 
+              ? `<span class="ml-auto text-xs text-slate-500 font-medium px-3 py-1.5 bg-slate-900/50 rounded-lg">✓ Claimed</span>`
+              : `<button id="read-btn-${index}" onclick="startReadingArticle(${index}, '${art.link}')" class="ml-auto bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-3.5 py-2 rounded-lg transition">
+                  Read & Earn (+0.2 Coins)
+                </button>`
+            }
           </div>
         `;
         container.appendChild(card);
@@ -146,7 +232,32 @@
     }
   }
 
+  // Anti-Cheat Protected Article Reader
   function startReadingArticle(index, articleUrl) {
+    // 1. Anti-Cheat: Prevent multiple active timers
+    if (isTimerRunning) {
+      showAntiCheatBanner("Anti-Cheat: You already have an active reading timer running!");
+      return;
+    }
+
+    // 2. Anti-Cheat: Minimum 5-second cooldown between reads
+    const now = Date.now();
+    if (now - lastReadTime < 5000) {
+      showAntiCheatBanner("Slow down! Please wait 5 seconds between reading articles.");
+      return;
+    }
+
+    // 3. Anti-Cheat: Check if article was already read
+    if (readArticles.includes(articleUrl)) {
+      showAntiCheatBanner("You have already earned coins from this article!");
+      return;
+    }
+
+    // Lock Timer State
+    isTimerRunning = true;
+    activeReadingIndex = index;
+
+    // Launch Tabs
     window.open(articleUrl, '_blank');
     window.open(SMARTLINK_URL, '_blank');
 
@@ -154,26 +265,44 @@
     const timerBox = document.getElementById(`timer-box-${index}`);
     const timerText = document.getElementById(`seconds-${index}`);
 
-    btn.disabled = true;
-    btn.classList.add('opacity-50', 'cursor-not-allowed');
-    timerBox.classList.remove('hidden');
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    if (timerBox) timerBox.classList.remove('hidden');
 
     let timeSpent = 0;
     if (timerInterval) clearInterval(timerInterval);
 
     timerInterval = setInterval(() => {
+      // Strictly require user to be on active browser tab
       if (isTabActive) {
         timeSpent++;
         let remaining = 15 - timeSpent;
-        timerText.innerText = remaining > 0 ? remaining : 0;
+        if (timerText) timerText.innerText = remaining > 0 ? remaining : 0;
 
         if (timeSpent >= 15) {
           clearInterval(timerInterval);
+          isTimerRunning = false;
+          lastReadTime = Date.now();
+
+          // Mark article as read
+          readArticles.push(articleUrl);
+          localStorage.setItem('read_articles', JSON.stringify(readArticles));
+
           claimReward();
-          timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
+          if (timerBox) timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
         }
       }
     }, 1000);
+  }
+
+  function showAntiCheatBanner(msg) {
+    const banner = document.getElementById('anticheat-banner');
+    const msgEl = document.getElementById('anticheat-msg');
+    msgEl.innerText = msg;
+    banner.classList.remove('hidden');
+    setTimeout(() => { banner.classList.add('hidden'); }, 4000);
   }
 
   function claimReward() {
@@ -182,9 +311,16 @@
     alert(`🎉 Earned 0.2 Coins!`);
   }
 
-  // Handle Withdrawal Request to Supabase + Telegram
+  // Handle Withdrawal Request to Backend
   async function handleWithdraw(e) {
     e.preventDefault();
+    
+    if (!userId) {
+      alert("Please login first to submit a withdrawal request.");
+      initAuth();
+      return;
+    }
+
     const btn = document.getElementById('withdraw-btn');
     const method = document.getElementById('pay-method').value;
     const details = document.getElementById('pay-details').value;
@@ -228,8 +364,8 @@
     }
   }
 
-  updateBalanceUI();
-  fetchLiveNews();
+  // Initialize App
+  initAuth();
   </script>
 
   <!-- Monetag Popunder Tag -->
