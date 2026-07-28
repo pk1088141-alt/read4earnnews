@@ -7,10 +7,12 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <meta name="title" content="NewsBuddy - Read Live News & Earn Coins Online">
   <meta name="description" content="Read real-time tech, science, and sports news on NewsBuddy. Earn reward coins while staying updated and redeem instantly via UPI, Paytm, or PayPal.">
-  <meta name="keywords" content="read news and earn, earn coins online, newsbuddy, student rewards app, read and earn UPI cash, latest news rewards, earn money reading articles">
   <meta name="monetag" content="f5d04860924389d9dccf9537fd828d7b">
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen pb-12">
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-5 right-5 z-[110] space-y-2"></div>
 
   <!-- Login Modal -->
   <div id="login-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
@@ -29,7 +31,6 @@
           Continue to Earn
         </button>
       </form>
-      <p class="text-[10px] text-slate-500 text-center">🛡️ Protected against bots and multi-account automation.</p>
     </div>
   </div>
 
@@ -55,6 +56,18 @@
 
     <!-- News Feed Column -->
     <section class="md:col-span-2 space-y-4">
+      
+      <!-- Daily Bonus & Banner -->
+      <div class="bg-gradient-to-r from-amber-500/10 to-indigo-500/10 border border-amber-500/20 p-4 rounded-xl flex justify-between items-center">
+        <div>
+          <h3 class="text-sm font-bold text-amber-300">🎁 Daily Check-in Bonus</h3>
+          <p class="text-[11px] text-slate-400">Claim 1.0 free coin every 24 hours!</p>
+        </div>
+        <button onclick="claimDailyBonus()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-3.5 py-2 rounded-lg transition">
+          Claim (+1.0)
+        </button>
+      </div>
+
       <div class="flex justify-between items-center mb-2">
         <h2 class="text-lg font-semibold text-slate-300">🔥 Live Student News</h2>
         <select id="news-category" onchange="fetchLiveNews()" class="bg-slate-800 text-xs border border-slate-700 rounded-lg p-1.5 text-slate-300">
@@ -63,11 +76,6 @@
           <option value="entertainment">Entertainment</option>
           <option value="sports">Sports</option>
         </select>
-      </div>
-
-      <!-- Anti-Cheat Status Banner -->
-      <div id="anticheat-banner" class="hidden bg-amber-500/10 border border-amber-500/30 text-amber-400 p-3 rounded-xl text-xs font-medium">
-        ⚠️ <span id="anticheat-msg">Anti-cheat active: Only 1 active timer allowed at a time.</span>
       </div>
 
       <!-- Container where live news is injected -->
@@ -79,6 +87,15 @@
     <!-- Sidebar Column -->
     <aside class="space-y-4 sticky top-24 h-fit">
       
+      <!-- Referral Card -->
+      <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl space-y-2">
+        <h3 class="text-xs font-bold text-indigo-300">👥 Invite Friends & Earn</h3>
+        <p class="text-[11px] text-slate-400">Share your referral link to earn bonus rewards when friends join!</p>
+        <button onclick="copyReferralLink()" class="w-full bg-indigo-900/50 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 text-xs py-2 rounded-lg transition">
+          📋 Copy Referral Link
+        </button>
+      </div>
+
       <!-- Withdrawal Panel -->
       <div class="bg-slate-800 border border-slate-700 p-5 rounded-xl">
         <h2 class="text-md font-bold text-slate-200 border-b border-slate-700 pb-2 mb-4">💸 Redeem Earnings</h2>
@@ -114,9 +131,7 @@
       <!-- Telegram Contact Support Panel -->
       <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl text-center space-y-2">
         <p class="text-xs font-semibold text-slate-300">💬 Need Help or Facing Issues?</p>
-        <p class="text-[11px] text-slate-400">Contact admin directly on Telegram for fast withdrawal support.</p>
         <a href="https://t.me/PIYUSHYTUBER" target="_blank" class="inline-flex items-center justify-center gap-1.5 w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-lg text-xs transition">
-          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.16l-2.03 9.56c-.15.68-.56.84-1.13.52l-3.1-2.28-1.5 1.44c-.17.17-.31.31-.63.31l.22-3.16 5.76-5.2c.25-.22-.05-.34-.39-.12l-7.12 4.48-3.07-.96c-.67-.21-.68-.67.14-.99l12.01-4.63c.56-.21 1.05.13.84.87z"/></svg>
           Contact @PIYUSHYTUBER
         </a>
       </div>
@@ -125,28 +140,28 @@
 
   </main>
 
-  <!-- Application Script -->
   <script>
   const SMARTLINK_URL = 'https://omg10.com/4/11439413';
   
-  // App State
   let userId = localStorage.getItem('user_id') || '';
   let coins = parseFloat(localStorage.getItem('user_coins')) || 0.0;
   let readArticles = JSON.parse(localStorage.getItem('read_articles') || '[]');
   
-  // Anti-Cheat State Variables
   let timerInterval = null;
   let isTabActive = true;
-  let activeReadingIndex = null;
   let isTimerRunning = false;
-  let lastReadTime = 0;
 
-  // Track Tab Visibility (Anti-Cheat)
-  document.addEventListener('visibilitychange', () => { 
-    isTabActive = !document.hidden; 
-  });
+  document.addEventListener('visibilitychange', () => { isTabActive = !document.hidden; });
 
-  // Handle Login & Session Management
+  function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `px-4 py-2.5 rounded-xl text-xs font-semibold text-white shadow-lg backdrop-blur-md transition-all duration-300 ${type === 'success' ? 'bg-emerald-600/90' : 'bg-indigo-600/90'}`;
+    toast.innerText = message;
+    container.appendChild(toast);
+    setTimeout(() => { toast.remove(); }, 3500);
+  }
+
   function initAuth() {
     if (!userId) {
       document.getElementById('login-modal').classList.remove('hidden');
@@ -165,32 +180,21 @@
 
     userId = input;
     localStorage.setItem('user_id', userId);
-    
-    // Load existing user coins or start fresh
     coins = parseFloat(localStorage.getItem(`coins_${userId}`)) || 0.0;
     updateBalanceUI();
-
     initAuth();
   }
 
   function handleLogout() {
-    if (isTimerRunning) {
-      alert("Please finish your active reading timer first!");
-      return;
-    }
     localStorage.removeItem('user_id');
     location.reload();
   }
 
   function updateBalanceUI() {
     document.getElementById('user-coins').innerText = coins.toFixed(1);
-    if (userId) {
-      localStorage.setItem('user_coins', coins.toString());
-      localStorage.setItem(`coins_${userId}`, coins.toString());
-    }
+    if (userId) localStorage.setItem(`coins_${userId}`, coins.toString());
   }
 
-  // Fetch Live RSS News
   async function fetchLiveNews() {
     const container = document.getElementById('news-container');
     const category = document.getElementById('news-category').value;
@@ -232,32 +236,10 @@
     }
   }
 
-  // Anti-Cheat Protected Article Reader
   function startReadingArticle(index, articleUrl) {
-    // 1. Anti-Cheat: Prevent multiple active timers
-    if (isTimerRunning) {
-      showAntiCheatBanner("Anti-Cheat: You already have an active reading timer running!");
-      return;
-    }
+    if (isTimerRunning) return showToast("Anti-Cheat: Finish active reading first!", "error");
 
-    // 2. Anti-Cheat: Minimum 5-second cooldown between reads
-    const now = Date.now();
-    if (now - lastReadTime < 5000) {
-      showAntiCheatBanner("Slow down! Please wait 5 seconds between reading articles.");
-      return;
-    }
-
-    // 3. Anti-Cheat: Check if article was already read
-    if (readArticles.includes(articleUrl)) {
-      showAntiCheatBanner("You have already earned coins from this article!");
-      return;
-    }
-
-    // Lock Timer State
     isTimerRunning = true;
-    activeReadingIndex = index;
-
-    // Launch Tabs
     window.open(articleUrl, '_blank');
     window.open(SMARTLINK_URL, '_blank');
 
@@ -265,17 +247,13 @@
     const timerBox = document.getElementById(`timer-box-${index}`);
     const timerText = document.getElementById(`seconds-${index}`);
 
-    if (btn) {
-      btn.disabled = true;
-      btn.classList.add('opacity-50', 'cursor-not-allowed');
-    }
+    if (btn) btn.disabled = true;
     if (timerBox) timerBox.classList.remove('hidden');
 
     let timeSpent = 0;
     if (timerInterval) clearInterval(timerInterval);
 
-    timerInterval = setInterval(() => {
-      // Strictly require user to be on active browser tab
+    timerInterval = setInterval(async () => {
       if (isTabActive) {
         timeSpent++;
         let remaining = 15 - timeSpent;
@@ -284,91 +262,79 @@
         if (timeSpent >= 15) {
           clearInterval(timerInterval);
           isTimerRunning = false;
-          lastReadTime = Date.now();
 
-          // Mark article as read
           readArticles.push(articleUrl);
           localStorage.setItem('read_articles', JSON.stringify(readArticles));
 
-          claimReward();
+          // Call backend server function
+          await claimReward('article_read', articleUrl);
           if (timerBox) timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
         }
       }
     }, 1000);
   }
 
-  function showAntiCheatBanner(msg) {
-    const banner = document.getElementById('anticheat-banner');
-    const msgEl = document.getElementById('anticheat-msg');
-    msgEl.innerText = msg;
-    banner.classList.remove('hidden');
-    setTimeout(() => { banner.classList.add('hidden'); }, 4000);
+  async function claimReward(type, articleUrl = '') {
+    try {
+      const res = await fetch('/.netlify/functions/claim-reward', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, type, articleUrl })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        coins = data.newBalance;
+        updateBalanceUI();
+        showToast(`🎉 Earned ${data.reward} Coins!`, "success");
+      } else {
+        showToast(data.message, "error");
+      }
+    } catch (err) {
+      coins += (type === 'daily_bonus' ? 1.0 : 0.2);
+      updateBalanceUI();
+      showToast("🎉 Earned coins locally!", "success");
+    }
   }
 
-  function claimReward() {
-    coins += 0.2;
-    updateBalanceUI();
-    alert(`🎉 Earned 0.2 Coins!`);
+  function claimDailyBonus() {
+    claimReward('daily_bonus');
   }
 
-  // Handle Withdrawal Request to Backend
+  function copyReferralLink() {
+    const link = `${window.location.origin}/?ref=${userId}`;
+    navigator.clipboard.writeText(link);
+    showToast("📋 Referral link copied!", "success");
+  }
+
   async function handleWithdraw(e) {
     e.preventDefault();
-    
-    if (!userId) {
-      alert("Please login first to submit a withdrawal request.");
-      initAuth();
-      return;
-    }
-
-    const btn = document.getElementById('withdraw-btn');
     const method = document.getElementById('pay-method').value;
     const details = document.getElementById('pay-details').value;
     const amount = parseFloat(document.getElementById('pay-amount').value);
 
-    if (amount < 50) {
-      alert("Minimum withdrawal requirement is 50 Coins!");
+    if (amount < 50 || coins < amount) {
+      showToast("Check minimum 50 coins or balance!", "error");
       return;
     }
 
-    if (coins < amount) {
-      alert("Insufficient coin balance!");
-      return;
-    }
+    const res = await fetch('/.netlify/functions/payout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, method, details, amount })
+    });
 
-    btn.disabled = true;
-    btn.innerText = 'Processing...';
-
-    try {
-      const response = await fetch('/.netlify/functions/payout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, method, details, amount })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        coins -= amount;
-        updateBalanceUI();
-        alert(`✅ Payout requested! Notification sent to admin via Telegram.`);
-        document.getElementById('withdraw-form').reset();
-      } else {
-        alert(data.message || "Payout failed.");
-      }
-    } catch (err) {
-      alert("Server error processing payout.");
-    } finally {
-      btn.disabled = false;
-      btn.innerText = 'Request Payout';
+    if (res.ok) {
+      coins -= amount;
+      updateBalanceUI();
+      showToast("✅ Withdrawal requested!", "success");
+      document.getElementById('withdraw-form').reset();
     }
   }
 
-  // Initialize App
   initAuth();
   </script>
 
-  <!-- Monetag Popunder Tag -->
+  <!-- Monetag Popunder -->
   <script>(function(s){s.dataset.zone='11439402',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </body>
 </html>
