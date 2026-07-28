@@ -135,7 +135,7 @@
               ⏱️ Active reading: <span id="seconds-${index}">15</span>s left
             </div>
             <button id="read-btn-${index}" onclick="startReadingArticle(${index}, '${art.link}')" class="ml-auto bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-3.5 py-2 rounded-lg transition">
-              Read & Earn (+0.5 Coins)
+              Read & Earn (+0.2 Coins)
             </button>
           </div>
         `;
@@ -177,9 +177,9 @@
   }
 
   function claimReward() {
-    coins += 0.5;
+    coins += 0.2;
     updateBalanceUI();
-    alert(`🎉 Earned 0.5 Coins!`);
+    alert(`🎉 Earned 0.2 Coins!`);
   }
 
   // Handle Withdrawal Request to Supabase + Telegram
