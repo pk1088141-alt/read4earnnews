@@ -11,48 +11,95 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { userId, type, articleUrl } = JSON.parse(event.body);
+    const { userId, type } = JSON.parse(event.body || '{}');
 
     if (!userId) {
-      return { statusCode: 400, body: JSON.stringify({ message: 'User ID required' }) };
+      return { 
+        statusCode: 400, 
+        body: JSON.stringify({ success: false, message: 'User ID is required' }) 
+      };
     }
 
-    let rewardAmount = 0.2; // Default article reward
+    let rewardAmount = 0.2; // Standard read reward
     if (type === 'daily_bonus') rewardAmount = 1.0;
 
-    // Fetch user or create if not exists
-    let { data: user } = await supabase.from('users').select('*').eq('user_id', userId).single();
+    // Fetch existing user record
+    let { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
 
+    if (fetchError) {
+      console.error('Fetch Error:', fetchError);
+      return { statusCode: 500, body: JSON.stringify({ success: false, message: 'Database fetch failed' }) };
+    }
+
+    // If user doesn't exist, create them
     if (!user) {
-      const { data: newUser } = await supabase.from('users').insert([{ user_id: userId, coins: 0 }]).select().single();
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert([{ user_id: userId, coins: 0.0 }])
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Create Error:', createError);
+        return { statusCode: 500, body: JSON.stringify({ success: false, message: 'Could not create user record' }) };
+      }
       user = newUser;
     }
 
-    // Check if daily bonus already claimed today
+    // Check daily bonus 24hr constraint
     if (type === 'daily_bonus') {
       const lastClaim = user.last_daily_bonus ? new Date(user.last_daily_bonus) : null;
       const today = new Date().toDateString();
 
       if (lastClaim && lastClaim.toDateString() === today) {
-        return { statusCode: 400, body: JSON.stringify({ message: 'Daily bonus already claimed today!' }) };
+        return { 
+          statusCode: 400, 
+          body: JSON.stringify({ success: false, message: 'Daily bonus already claimed today!' }) 
+        };
       }
+    }
 
-      await supabase.from('users').update({ 
-        coins: user.coins + rewardAmount, 
-        last_daily_bonus: new Date().toISOString() 
-      }).eq('user_id', userId);
+    // Calculate new total safely (ensuring numerical conversion)
+    const currentCoins = parseFloat(user.coins || 0);
+    const newCoins = parseFloat((currentCoins + rewardAmount).toFixed(2));
 
-    } else {
-      // Reward standard article read
-      await supabase.from('users').update({ coins: user.coins + rewardAmount }).eq('user_id', userId);
+    // Prepare update payload
+    const updateData = { coins: newCoins };
+    if (type === 'daily_bonus') {
+      updateData.last_daily_bonus = new Date().toISOString();
+    }
+
+    // Update in Supabase
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (updateError || !updatedUser) {
+      console.error('Update Error:', updateError);
+      return { statusCode: 500, body: JSON.stringify({ success: false, message: 'Failed to update coins in DB' }) };
     }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, reward: rewardAmount, newBalance: user.coins + rewardAmount })
+      body: JSON.stringify({ 
+        success: true, 
+        reward: rewardAmount, 
+        newBalance: updatedUser.coins 
+      })
     };
 
   } catch (err) {
-    return { statusCode: 500, body: JSON.stringify({ message: 'Server error processing reward' }) };
+    console.error('Server Catch Error:', err);
+    return { 
+      statusCode: 500, 
+      body: JSON.stringify({ success: false, message: 'Server processing error' }) 
+    };
   }
 };
