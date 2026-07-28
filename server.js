@@ -1,125 +1,108 @@
 const express = require('express');
-const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
 const app = express();
 
-app.use(cors());
 app.use(express.json());
+app.use(express.static('.')); // Serves index.html from current folder
 
-// Set GNews API Key from environment variable or direct string
-const GNEWS_API_KEY = process.env.GNEWS_API_KEY || 'f79c4c065fb03cc88219a01a034950c3';
+// --- TELEGRAM CONFIGURATION ---
+const BOT_TOKEN = '8673971356:AAEfDg8fmUmnNlO5HzICxXYU0m8bQ1KAcu4
+'; // From @BotFather
+const TELEGRAM_CHAT_ID = '7069045254';   // From @userinfobot
 
-// Initialize SQLite DB
-const db = new sqlite3.Database('./database.db', (err) => {
-  if (!err) {
-    console.log('Database connected.');
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-      user_id TEXT PRIMARY KEY,
-      coins REAL DEFAULT 0,
-      ip_address TEXT,
-      last_claimed INTEGER DEFAULT 0
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS withdrawals (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id TEXT,
-      amount REAL,
-      method TEXT,
-      payout_details TEXT,
-      status TEXT DEFAULT 'PENDING'
-    )`);
-  }
-});
+// In-Memory Database (Replace with MongoDB/Firebase in production)
+const usersDB = {};
 
-// 1. Fetch Live News from GNews API
-app.get('/api/news', async (req, res) => {
-  try {
-    const category = req.query.category || 'technology';
-    const gnewsUrl = `https://gnews.io/api/v4/top-headlines?category=${category}&lang=en&max=10&apikey=${GNEWS_API_KEY}`;
-    
-    const response = await fetch(gnewsUrl);
-    const data = await response.json();
+// Reward & Rate-Limit Settings
+const REWARD_CONFIG = {
+    article_read: { amount: 1.5, cooldownMs: 30000 },  // 30s cooldown
+    sponsor_offer: { amount: 2.0, cooldownMs: 60000 }  // 60s cooldown
+};
 
-    if (!response.ok) {
-      return res.status(response.status).json({ error: data.errors || 'Failed to fetch news' });
-    }
-
-    res.json(data.articles || []);
-  } catch (error) {
-    res.status(500).json({ error: 'Server error while fetching news' });
-  }
-});
-
-// 2. Get User Balance
-app.get('/api/user/:userId', (req, res) => {
-  const { userId } = req.params;
-  db.get('SELECT * FROM users WHERE user_id = ?', [userId], (err, row) => {
-    if (!row) {
-      db.run('INSERT INTO users (user_id, coins, ip_address) VALUES (?, ?, ?)', 
-        [userId, 0, req.ip], () => {
-          res.json({ user_id: userId, coins: 0 });
+// Send Direct Message to Telegram
+async function sendTelegramAlert(messageText) {
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+    try {
+        await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: messageText,
+                parse_mode: 'Markdown'
+            })
         });
-    } else {
-      res.json(row);
+    } catch (err) {
+        console.error('Telegram notification error:', err);
     }
-  });
-});
+}
 
-// 3. Claim Reward for Reading News (Anti-Cheat Server Logic)
-app.post('/api/reward/news', (req, res) => {
-  const { userId, timeSpentSeconds } = req.body;
+// 1. API: Securely Credit Reward
+app.post('/api/claim-reward', (req, res) => {
+    const { userId, rewardType } = req.body;
 
-  // Anti-Cheat: Minimum 15 seconds reading required
-  if (timeSpentSeconds < 15) {
-    return res.status(400).json({ error: 'Cheat detected: Read time too short!' });
-  }
+    if (!userId || !REWARD_CONFIG[rewardType]) {
+        return res.status(400).json({ message: "Invalid reward request." });
+    }
 
-  db.get('SELECT * FROM users WHERE user_id = ?', [userId], (err, user) => {
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!usersDB[userId]) {
+        usersDB[userId] = { balance: 0.0, lastClaimTime: 0 };
+    }
 
+    const user = usersDB[userId];
+    const config = REWARD_CONFIG[rewardType];
     const now = Date.now();
-    // Anti-Cheat: Cooldown check between claims
-    if (now - user.last_claimed < 15000) {
-      return res.status(429).json({ error: 'Claiming too fast! Please slow down.' });
+
+    // Enforce cooldown check on server
+    if (now - user.lastClaimTime < config.cooldownMs) {
+        const remainingSecs = Math.ceil((config.cooldownMs - (now - user.lastClaimTime)) / 1000);
+        return res.status(429).json({ message: `Cooldown active! Please wait ${remainingSecs} seconds.` });
     }
 
-    const reward = 1.5; // Earn 1.5 coins per read
-    const newBalance = user.coins + reward;
+    user.balance += config.amount;
+    user.lastClaimTime = now;
 
-    db.run('UPDATE users SET coins = ?, last_claimed = ? WHERE user_id = ?', 
-      [newBalance, now, userId], 
-      (err) => {
-        if (err) return res.status(500).json({ error: 'Database error' });
-        res.json({ success: true, coins: newBalance, added: reward });
-      }
-    );
-  });
-});
-
-// 4. Withdraw Request (Min 50 Coins)
-app.post('/api/withdraw', (req, res) => {
-  const { userId, amount, method, payoutDetails } = req.body;
-
-  if (amount < 50) {
-    return res.status(400).json({ error: 'Minimum withdrawal amount is 50 coins!' });
-  }
-
-  db.get('SELECT * FROM users WHERE user_id = ?', [userId], (err, user) => {
-    if (!user || user.coins < amount) {
-      return res.status(400).json({ error: 'Insufficient coin balance.' });
-    }
-
-    const newBalance = user.coins - amount;
-
-    db.run('UPDATE users SET coins = ? WHERE user_id = ?', [newBalance, userId], (err) => {
-      db.run('INSERT INTO withdrawals (user_id, amount, method, payout_details) VALUES (?, ?, ?, ?)',
-        [userId, amount, method, payoutDetails],
-        () => {
-          res.json({ success: true, newBalance, message: 'Withdrawal requested successfully!' });
-        }
-      );
+    return res.json({
+        success: true,
+        earned: config.amount,
+        newBalance: user.balance
     });
-  });
 });
 
-const PORT = 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// 2. API: Process Withdrawal & Send Telegram Alert
+app.post('/api/request-payout', async (req, res) => {
+    const { userId, withdrawMethod, accountDetails, amount } = req.body;
+    const user = usersDB[userId];
+
+    if (!user || user.balance < 50 || amount < 50) {
+        return res.status(400).json({ message: "Minimum withdrawal requirement is 50 Coins." });
+    }
+
+    if (user.balance < amount) {
+        return res.status(400).json({ message: "Insufficient account balance." });
+    }
+
+    // Deduct coins on server
+    user.balance -= amount;
+
+    // Send instant alert to Telegram
+    const alertMessage = 
+`🚨 *NEW WITHDRAWAL REQUEST* 🚨
+
+👤 *User ID:* \`${userId}\`
+💳 *Method:* ${withdrawMethod}
+📱 *Account / UPI:* \`${accountDetails}\`
+💰 *Amount Requested:* ${amount} Coins
+🪙 *Remaining Balance:* ${user.balance} Coins
+⏰ *Timestamp:* ${new Date().toLocaleString()}`;
+
+    await sendTelegramAlert(alertMessage);
+
+    return res.json({
+        success: true,
+        remainingBalance: user.balance
+    });
+});
+
+app.listen(3000, () => {
+    console.log('✅ NewsBuddy server running on http://localhost:3000');
+});
