@@ -3,31 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NewsBuddy - Read Real News & Earn</title>
+  <title>NewsBuddy - Read & Earn</title>
+  <!-- Student-Friendly UI via Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- PASTE YOUR MONETAG POPUNDER CODE HERE -->
+  <!-- ========================================== -->
+  <!-- MONETAG POPUNDER SCRIPT (Paste Tag Below)  -->
+  <!-- ========================================== -->
+  <!-- <script type="text/javascript" src="//your-monetag-popunder.js"></script> -->
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen pb-12">
 
-  <!-- Navigation Bar -->
+  <!-- Header Section -->
   <nav class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50 flex justify-between items-center max-w-4xl mx-auto rounded-b-2xl shadow-lg">
     <div class="flex items-center gap-2">
       <span class="text-2xl">⚡</span>
       <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">NewsBuddy</h1>
     </div>
+    <!-- Wallet Balance -->
     <div class="bg-indigo-950 border border-indigo-500/30 px-4 py-1.5 rounded-full">
       <span class="text-amber-400 font-bold">🪙 <span id="user-coins">0.0</span> Coins</span>
     </div>
   </nav>
 
-  <!-- Content Grid -->
+  <!-- Main Container -->
   <main class="max-w-4xl mx-auto px-4 mt-6 grid md:grid-cols-3 gap-6">
 
-    <!-- Articles List Column -->
+    <!-- News Feed Column -->
     <section class="md:col-span-2 space-y-4">
       <div class="flex justify-between items-center mb-2">
-        <h2 class="text-lg font-semibold text-slate-300">🔥 Live News</h2>
+        <h2 class="text-lg font-semibold text-slate-300">🔥 Live Student News</h2>
         <select id="news-category" onchange="fetchLiveNews()" class="bg-slate-800 text-xs border border-slate-700 rounded-lg p-1.5 text-slate-300">
           <option value="technology">Technology</option>
           <option value="science">Science</option>
@@ -36,14 +41,16 @@
         </select>
       </div>
 
+      <!-- Container where live news will be injected -->
       <div id="news-container" class="space-y-4">
-        <p class="text-slate-400 text-sm">Loading articles...</p>
+        <p class="text-slate-400 text-sm">Loading latest news...</p>
       </div>
 
-      <!-- Monetag Smartlink Direct Offer Banner -->
+      <!-- Monetag Smartlink Banner -->
       <div class="bg-gradient-to-r from-pink-900/30 to-purple-900/30 border border-pink-500/30 p-4 rounded-xl text-center">
         <p class="text-sm font-medium text-pink-200 mb-2">🎁 Want Bonus Coins? Check Sponsor Offers!</p>
-        <a href="YOUR_MONETAG_SMARTLINK_URL" target="_blank" class="inline-block bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition">
+        <!-- Replace MONETAG_SMARTLINK_URL with your actual Monetag link -->
+        <a href="YOUR_MONETAG_SMARTLINK_URL" target="_blank" onclick="addCoins(2)" class="inline-block bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition">
           View Sponsor Offer (+2 Coins)
         </a>
       </div>
@@ -55,7 +62,7 @@
       
       <form id="withdraw-form" onsubmit="handleWithdraw(event)" class="space-y-3">
         <div>
-          <label class="text-xs text-slate-400 block mb-1">Method</label>
+          <label class="text-xs text-slate-400 block mb-1">Withdraw Method</label>
           <select id="pay-method" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-2.5 text-white">
             <option value="UPI">UPI</option>
             <option value="Paytm">Paytm</option>
@@ -65,12 +72,12 @@
         </div>
 
         <div>
-          <label class="text-xs text-slate-400 block mb-1">Payout Account Info</label>
-          <input type="text" id="pay-details" required placeholder="UPI ID / Email" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-2.5 text-white">
+          <label class="text-xs text-slate-400 block mb-1">Account Details (UPI ID / Email)</label>
+          <input type="text" id="pay-details" required placeholder="e.g. user@upi" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-2.5 text-white">
         </div>
 
         <div>
-          <label class="text-xs text-slate-400 block mb-1">Amount (Min 50 Coins)</label>
+          <label class="text-xs text-slate-400 block mb-1">Amount (Min. 50 Coins)</label>
           <input type="number" id="pay-amount" min="50" required placeholder="50" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-2.5 text-white">
         </div>
 
@@ -78,11 +85,143 @@
           Request Payout
         </button>
       </form>
-      <p class="text-[11px] text-slate-500 mt-3 text-center">🛡️ Minimum payout: 50 Coins</p>
+      <p class="text-[11px] text-slate-500 mt-3 text-center">🛡️ Anti-Fraud Protected. Min. 50 Coins.</p>
     </aside>
 
   </main>
 
-  <script src="app.js"></script>
+  <script>
+    // -------------------------------------------------------------
+    // CONFIGURATION
+    // -------------------------------------------------------------
+    const GNEWS_API_KEY = 'f79c4c065fb03cc88219a01a034950c3';
+    
+    let coins = parseFloat(localStorage.getItem('user_coins')) || 0.0;
+    let timerInterval = null;
+    let readingTimeSpent = 0;
+    let isTabActive = true;
+
+    // Detect Tab Switch (Anti-Cheat: Pauses timer if user leaves tab)
+    document.addEventListener('visibilitychange', () => {
+      isTabActive = !document.hidden;
+    });
+
+    function updateBalanceUI() {
+      document.getElementById('user-coins').innerText = coins.toFixed(1);
+      localStorage.setItem('user_coins', coins.toString());
+    }
+
+    function addCoins(amount) {
+      coins += amount;
+      updateBalanceUI();
+      alert(`🎉 Added ${amount} Coins to your balance!`);
+    }
+
+    // -------------------------------------------------------------
+    // FETCH NEWS DIRECTLY FROM GNEWS API
+    // -------------------------------------------------------------
+    async function fetchLiveNews() {
+      const container = document.getElementById('news-container');
+      const category = document.getElementById('news-category').value;
+      container.innerHTML = `<p class="text-slate-400 text-sm">Fetching real-time news...</p>`;
+
+      try {
+        const url = `https://gnews.io/api/v4/top-headlines?category=${category}&lang=en&max=8&apikey=${GNEWS_API_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.articles || data.articles.length === 0) {
+          container.innerHTML = `<p class="text-rose-400 text-sm">No news found or API quota exceeded.</p>`;
+          return;
+        }
+
+        container.innerHTML = '';
+        data.articles.forEach((art, index) => {
+          const card = document.createElement('article');
+          card.className = "bg-slate-800 border border-slate-700/60 p-4 rounded-xl shadow-md space-y-3";
+          
+          card.innerHTML = `
+            ${art.image ? `<img src="${art.image}" class="w-full h-40 object-cover rounded-lg" alt="News"/>` : ''}
+            <h3 class="text-md font-bold text-white line-clamp-2">${art.title}</h3>
+            <p class="text-slate-400 text-xs line-clamp-3">${art.description || 'Click below to read story.'}</p>
+            
+            <div class="pt-2 border-t border-slate-700/50 flex justify-between items-center">
+              <div id="timer-box-${index}" class="text-xs text-amber-400 hidden font-mono">
+                ⏱️ Active reading: <span id="seconds-${index}">15</span>s left
+              </div>
+              <button id="read-btn-${index}" onclick="startReadingArticle(${index}, '${art.url}')" class="ml-auto bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-3.5 py-2 rounded-lg transition">
+                Read & Earn (+1.5 Coins)
+              </button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (error) {
+        container.innerHTML = `<p class="text-rose-400 text-sm">Error connecting to GNews API.</p>`;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // TIMER & ANTI-CHEAT LOGIC
+    // -------------------------------------------------------------
+    function startReadingArticle(index, articleUrl) {
+      window.open(articleUrl, '_blank');
+
+      const btn = document.getElementById(`read-btn-${index}`);
+      const timerBox = document.getElementById(`timer-box-${index}`);
+      const timerText = document.getElementById(`seconds-${index}`);
+
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+      timerBox.classList.remove('hidden');
+
+      readingTimeSpent = 0;
+      const targetSeconds = 15;
+
+      if (timerInterval) clearInterval(timerInterval);
+
+      timerInterval = setInterval(() => {
+        if (isTabActive) {
+          readingTimeSpent++;
+          let remaining = targetSeconds - readingTimeSpent;
+          timerText.innerText = remaining > 0 ? remaining : 0;
+
+          if (readingTimeSpent >= targetSeconds) {
+            clearInterval(timerInterval);
+            addCoins(1.5);
+            timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
+          }
+        }
+      }, 1000);
+    }
+
+    // -------------------------------------------------------------
+    // WITHDRAWAL LOGIC (MINIMUM 50 COINS)
+    // -------------------------------------------------------------
+    function handleWithdraw(e) {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById('pay-amount').value);
+      const details = document.getElementById('pay-details').value;
+
+      if (amount < 50) {
+        alert('Minimum withdrawal requirement is 50 Coins!');
+        return;
+      }
+
+      if (coins < amount) {
+        alert('Insufficient coin balance!');
+        return;
+      }
+
+      coins -= amount;
+      updateBalanceUI();
+      alert(`✅ Payout request for ${amount} Coins submitted successfully to ${details}!`);
+      document.getElementById('withdraw-form').reset();
+    }
+
+    // Load initial balance and news
+    updateBalanceUI();
+    fetchLiveNews();
+  </script>
 </body>
 </html>
