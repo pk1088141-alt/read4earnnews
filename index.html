@@ -57,7 +57,7 @@
     <!-- News Feed Column -->
     <section class="md:col-span-2 space-y-4">
       
-      <!-- Daily Bonus & Banner -->
+      <!-- Daily Bonus Banner -->
       <div class="bg-gradient-to-r from-amber-500/10 to-indigo-500/10 border border-amber-500/20 p-4 rounded-xl flex justify-between items-center">
         <div>
           <h3 class="text-sm font-bold text-amber-300">🎁 Daily Check-in Bonus</h3>
@@ -140,6 +140,7 @@
 
   </main>
 
+  <!-- Application Logic -->
   <script>
   const SMARTLINK_URL = 'https://omg10.com/4/11439413';
   
@@ -266,7 +267,6 @@
           readArticles.push(articleUrl);
           localStorage.setItem('read_articles', JSON.stringify(readArticles));
 
-          // Call backend server function
           await claimReward('article_read', articleUrl);
           if (timerBox) timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
         }
@@ -334,7 +334,11 @@
   initAuth();
   </script>
 
-  <!-- Monetag Popunder -->
+  <!-- Monetag In-Page Push Tag -->
+  <script>(function(s){s.dataset.zone='11440394',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+
+  <!-- Monetag Popunder Tag -->
   <script>(function(s){s.dataset.zone='11439402',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+
 </body>
 </html>
