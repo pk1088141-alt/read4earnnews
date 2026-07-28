@@ -82,145 +82,40 @@
 
   </main>
 
-  <script>
-  const POPUNDER_URL = 'https://omg10.com/4/11439413';
-  let userId = localStorage.getItem('user_id') || ('user_' + Math.random().toString(36).substr(2, 9));
-  localStorage.setItem('user_id', userId);
+  // Local reward claiming without a backend server
+function claimReward(rewardType, onSuccess) {
+  const rewardAmount = rewardType === 'sponsor_offer' ? 2.0 : 1.5;
+  coins += rewardAmount;
+  
+  // Update UI and save to local storage
+  updateBalanceUI(coins);
+  localStorage.setItem('user_coins', coins.toString());
+  
+  alert(`🎉 Earned ${rewardAmount} Coins!`);
+  if (onSuccess) onSuccess();
+}
 
-  let coins = 0.0;
-  let timerInterval = null;
-  let isTabActive = true;
+// Local withdrawal handler without a backend server
+function handleWithdraw(e) {
+  e.preventDefault();
+  const method = document.getElementById('pay-method').value;
+  const details = document.getElementById('pay-details').value;
+  const amount = parseFloat(document.getElementById('pay-amount').value);
 
-  document.addEventListener('visibilitychange', () => { isTabActive = !document.hidden; });
-
-  function updateBalanceUI(newBalance) {
-    coins = newBalance;
-    document.getElementById('user-coins').innerText = coins.toFixed(1);
+  if (amount < 50) {
+    alert("Minimum withdrawal requirement is 50 Coins!");
+    return;
   }
 
-  async function fetchLiveNews() {
-    const container = document.getElementById('news-container');
-    const category = document.getElementById('news-category').value;
-    container.innerHTML = `<p class="text-slate-400 text-sm">Fetching real-time news...</p>`;
-
-    const topic = category.toUpperCase();
-    const rssUrl = `https://news.google.com/rss/headlines/section/topic/${topic}?hl=en-IN&gl=IN&ceid=IN:en`;
-    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
-
-    try {
-      const response = await fetch(apiUrl);
-      const data = await response.json();
-
-      container.innerHTML = '';
-      data.items.slice(0, 10).forEach((art, index) => {
-        const card = document.createElement('article');
-        card.className = "bg-slate-800 border border-slate-700/60 p-4 rounded-xl shadow-md space-y-3";
-        
-        card.innerHTML = `
-          <h3 class="text-md font-bold text-white line-clamp-2">${art.title}</h3>
-          <div class="pt-2 border-t border-slate-700/50 flex justify-between items-center">
-            <div id="timer-box-${index}" class="text-xs text-amber-400 hidden font-mono">
-              ⏱️ Active reading: <span id="seconds-${index}">15</span>s left
-            </div>
-            <button id="read-btn-${index}" onclick="startReadingArticle(${index}, '${art.link}')" class="ml-auto bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-3.5 py-2 rounded-lg transition">
-              Read & Earn (+1.5 Coins)
-            </button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    } catch (err) {
-      container.innerHTML = `<p class="text-rose-400 text-sm">Failed to load news.</p>`;
-    }
+  if (coins < amount) {
+    alert("Insufficient coin balance!");
+    return;
   }
 
-  function startReadingArticle(index, articleUrl) {
-    window.open(articleUrl, '_blank');
-    const btn = document.getElementById(`read-btn-${index}`);
-    const timerBox = document.getElementById(`timer-box-${index}`);
-    const timerText = document.getElementById(`seconds-${index}`);
+  coins -= amount;
+  updateBalanceUI(coins);
+  localStorage.setItem('user_coins', coins.toString());
 
-    btn.disabled = true;
-    btn.classList.add('opacity-50', 'cursor-not-allowed');
-    timerBox.classList.remove('hidden');
-
-    let timeSpent = 0;
-    if (timerInterval) clearInterval(timerInterval);
-
-    timerInterval = setInterval(() => {
-      if (isTabActive) {
-        timeSpent++;
-        let remaining = 15 - timeSpent;
-        timerText.innerText = remaining > 0 ? remaining : 0;
-
-        if (timeSpent >= 15) {
-          clearInterval(timerInterval);
-          claimReward('article_read', () => {
-            timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
-          });
-        }
-      }
-    }, 1000);
-  }
-
-  function claimSponsorOffer(btn) {
-    btn.disabled = true;
-    window.open(POPUNDER_URL, '_blank');
-    claimReward('sponsor_offer', () => {
-      setTimeout(() => { btn.disabled = false; }, 30000);
-    });
-  }
-
-  async function claimReward(rewardType, onSuccess) {
-    try {
-      const response = await fetch('/api/claim-reward', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, rewardType })
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        updateBalanceUI(data.newBalance);
-        if (onSuccess) onSuccess();
-      } else {
-        alert(data.message || "Action blocked.");
-      }
-    } catch (err) {
-      alert("Server error.");
-    }
-  }
-
-  async function handleWithdraw(e) {
-    e.preventDefault();
-    const method = document.getElementById('pay-method').value;
-    const details = document.getElementById('pay-details').value;
-    const amount = parseFloat(document.getElementById('pay-amount').value);
-
-    try {
-      const response = await fetch('/api/request-payout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, withdrawMethod: method, accountDetails: details, amount })
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        alert(`✅ Payout requested! Notification sent to admin on Telegram.`);
-        updateBalanceUI(data.remainingBalance);
-        document.getElementById('withdraw-form').reset();
-      } else {
-        alert(data.message || "Payout failed.");
-      }
-    } catch (err) {
-      alert("Error submitting request.");
-    }
-  }
-
-  fetchLiveNews();
-  </script>
-
-  <!-- Monetag Popunder Tag -->
-  <script>(function(s){s.dataset.zone='11439402',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-</body>
-</html>
+  alert(`✅ Withdrawal request submitted for ${amount} Coins (${method}: ${details}).`);
+  document.getElementById('withdraw-form').reset();
+}
