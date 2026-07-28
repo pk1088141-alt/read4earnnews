@@ -82,40 +82,142 @@
 
   </main>
 
-  // Local reward claiming without a backend server
-function claimReward(rewardType, onSuccess) {
-  const rewardAmount = rewardType === 'sponsor_offer' ? 2.0 : 1.5;
-  coins += rewardAmount;
-  
-  // Update UI and save to local storage
-  updateBalanceUI(coins);
-  localStorage.setItem('user_coins', coins.toString());
-  
-  alert(`🎉 Earned ${rewardAmount} Coins!`);
-  if (onSuccess) onSuccess();
-}
+  <!-- Application Script -->
+  <script>
+  const SMARTLINK_URL = 'https://omg10.com/4/11439413';
+  let coins = parseFloat(localStorage.getItem('user_coins')) || 0.0;
+  let timerInterval = null;
+  let isTabActive = true;
 
-// Local withdrawal handler without a backend server
-function handleWithdraw(e) {
-  e.preventDefault();
-  const method = document.getElementById('pay-method').value;
-  const details = document.getElementById('pay-details').value;
-  const amount = parseFloat(document.getElementById('pay-amount').value);
+  // Detect Active Tab Focus
+  document.addEventListener('visibilitychange', () => {
+    isTabActive = !document.hidden;
+  });
 
-  if (amount < 50) {
-    alert("Minimum withdrawal requirement is 50 Coins!");
-    return;
+  function updateBalanceUI() {
+    document.getElementById('user-coins').innerText = coins.toFixed(1);
+    localStorage.setItem('user_coins', coins.toString());
   }
 
-  if (coins < amount) {
-    alert("Insufficient coin balance!");
-    return;
+  // Fetch Live RSS News
+  async function fetchLiveNews() {
+    const container = document.getElementById('news-container');
+    const category = document.getElementById('news-category').value;
+    container.innerHTML = `<p class="text-slate-400 text-sm">Fetching real-time news...</p>`;
+
+    const topic = category.toUpperCase();
+    const rssUrl = `https://news.google.com/rss/headlines/section/topic/${topic}?hl=en-IN&gl=IN&ceid=IN:en`;
+    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+
+    try {
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+
+      container.innerHTML = '';
+      data.items.slice(0, 10).forEach((art, index) => {
+        const card = document.createElement('article');
+        card.className = "bg-slate-800 border border-slate-700/60 p-4 rounded-xl shadow-md space-y-3";
+        
+        card.innerHTML = `
+          <h3 class="text-md font-bold text-white line-clamp-2">${art.title}</h3>
+          <div class="pt-2 border-t border-slate-700/50 flex justify-between items-center">
+            <div id="timer-box-${index}" class="text-xs text-amber-400 hidden font-mono">
+              ⏱️ Active reading: <span id="seconds-${index}">15</span>s left
+            </div>
+            <button id="read-btn-${index}" onclick="startReadingArticle(${index}, '${art.link}')" class="ml-auto bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-3.5 py-2 rounded-lg transition">
+              Read & Earn (+1.5 Coins)
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    } catch (err) {
+      container.innerHTML = `<p class="text-rose-400 text-sm">Failed to load news feeds.</p>`;
+    }
   }
 
-  coins -= amount;
-  updateBalanceUI(coins);
-  localStorage.setItem('user_coins', coins.toString());
+  // Read Article & Trigger Ad Smartlink
+  function startReadingArticle(index, articleUrl) {
+    // 1. Open Monetag Smartlink/Ad page in a new tab
+    window.open(SMARTLINK_URL, '_blank');
 
-  alert(`✅ Withdrawal request submitted for ${amount} Coins (${method}: ${details}).`);
-  document.getElementById('withdraw-form').reset();
-}
+    const btn = document.getElementById(`read-btn-${index}`);
+    const timerBox = document.getElementById(`timer-box-${index}`);
+    const timerText = document.getElementById(`seconds-${index}`);
+
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    timerBox.classList.remove('hidden');
+
+    let timeSpent = 0;
+    if (timerInterval) clearInterval(timerInterval);
+
+    // 2. Active timer check
+    timerInterval = setInterval(() => {
+      if (isTabActive) {
+        timeSpent++;
+        let remaining = 15 - timeSpent;
+        timerText.innerText = remaining > 0 ? remaining : 0;
+
+        if (timeSpent >= 15) {
+          clearInterval(timerInterval);
+          claimReward('article_read');
+          timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
+        }
+      }
+    }, 1000);
+  }
+
+  // Claim Sponsor Offer & Open Ad
+  function claimSponsorOffer(btn) {
+    btn.disabled = true;
+    window.open(SMARTLINK_URL, '_blank');
+    
+    claimReward('sponsor_offer');
+    
+    setTimeout(() => {
+      btn.disabled = false;
+    }, 30000);
+  }
+
+  // Claim Rewards Locally
+  function claimReward(rewardType) {
+    const rewardAmount = rewardType === 'sponsor_offer' ? 2.0 : 1.5;
+    coins += rewardAmount;
+    updateBalanceUI();
+    alert(`🎉 Earned ${rewardAmount} Coins!`);
+  }
+
+  // Process Withdrawal Form locally
+  function handleWithdraw(e) {
+    e.preventDefault();
+    const method = document.getElementById('pay-method').value;
+    const details = document.getElementById('pay-details').value;
+    const amount = parseFloat(document.getElementById('pay-amount').value);
+
+    if (amount < 50) {
+      alert("Minimum withdrawal requirement is 50 Coins!");
+      return;
+    }
+
+    if (coins < amount) {
+      alert("Insufficient coin balance!");
+      return;
+    }
+
+    coins -= amount;
+    updateBalanceUI();
+
+    alert(`✅ Withdrawal request submitted for ${amount} Coins (${method}: ${details}).`);
+    document.getElementById('withdraw-form').reset();
+  }
+
+  // Initialize page
+  updateBalanceUI();
+  fetchLiveNews();
+  </script>
+
+  <!-- Monetag Popunder Tag -->
+  <script>(function(s){s.dataset.zone='11439402',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+</body>
+</html>
