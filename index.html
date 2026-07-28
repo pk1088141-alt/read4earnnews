@@ -46,6 +46,9 @@
         </div>
         <h2 class="text-2xl font-black text-white tracking-wide mt-3">Welcome to NewsBuddy</h2>
         <p class="text-xs text-slate-400 mt-1">Read live feeds, collect coins & withdraw instantly.</p>
+        <p class="text-xs font-bold text-amber-400 mt-2 bg-amber-500/10 border border-amber-500/20 py-1 px-3 rounded-full inline-block">
+          🎁 New Users Get 10.0 Welcome Coins!
+        </p>
       </div>
       <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
         <div>
@@ -207,9 +210,10 @@
 
   <script>
   const SMARTLINK_URL = 'https://omg10.com/4/11439413';
+  const WELCOME_BONUS = 10.0; // Starting bonus for new users
   
-  let userId = localStorage.getItem('user_id') || '';
-  let coins = parseFloat(localStorage.getItem('user_coins')) || 0.0;
+  let userId = (localStorage.getItem('user_id') || '').trim().toLowerCase();
+  let coins = 0.0;
   let readArticles = JSON.parse(localStorage.getItem('read_articles') || '[]');
   
   let timerInterval = null;
@@ -226,6 +230,21 @@
     toast.innerText = text;
     container.appendChild(toast);
     setTimeout(() => { toast.remove(); }, 3500);
+  }
+
+  function loadUserCoins() {
+    if (!userId) return;
+    const savedCoins = localStorage.getItem(`coins_${userId}`);
+    if (savedCoins === null) {
+      // First-time user welcome bonus
+      coins = WELCOME_BONUS;
+      localStorage.setItem(`coins_${userId}`, coins.toString());
+      setTimeout(() => {
+        showToast(`🎉 Received ${WELCOME_BONUS.toFixed(1)} Welcome Coins!`, "success");
+      }, 500);
+    } else {
+      coins = parseFloat(savedCoins) || 0.0;
+    }
   }
 
   function checkDailyBonusState() {
@@ -248,7 +267,6 @@
       }
     }
 
-    // Available state
     btn.disabled = false;
     btn.className = "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl transition transform active:scale-95 shadow-md shadow-amber-500/20";
     btn.innerText = "Claim (+1.0)";
@@ -262,7 +280,7 @@
     } else {
       document.getElementById('login-modal').classList.add('hidden');
       document.getElementById('user-display-id').innerText = `👤 ${userId.substring(0, 14)}...`;
-      coins = parseFloat(localStorage.getItem(`coins_${userId}`)) || 0.0;
+      loadUserCoins();
       updateBalanceUI();
       checkDailyBonusState();
       fetchLiveNews();
@@ -271,12 +289,12 @@
 
   function handleLogin(e) {
     e.preventDefault();
-    const input = document.getElementById('login-identifier').value.trim();
+    const input = document.getElementById('login-identifier').value.trim().toLowerCase();
     if (!input) return;
 
     userId = input;
     localStorage.setItem('user_id', userId);
-    coins = parseFloat(localStorage.getItem(`coins_${userId}`)) || 0.0;
+    loadUserCoins();
     updateBalanceUI();
     initAuth();
   }
@@ -401,7 +419,6 @@
   function claimDailyBonus() {
     if (!checkDailyBonusState()) return;
 
-    // Lock button and save timestamp
     localStorage.setItem(`last_daily_bonus_${userId}`, Date.now().toString());
     checkDailyBonusState();
 
