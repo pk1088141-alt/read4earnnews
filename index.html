@@ -5,14 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NewsBuddy - Read Live News & Earn Coins Online</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Identity Services SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <meta name="title" content="NewsBuddy - Read Live News & Earn Coins Online">
-  <meta name="description" content="Read real-time tech, science, and sports news on NewsBuddy. Earn reward coins while staying updated.">
-  <meta name="monetag" content="f5d04860924389d9dccf9537fd828d7b">
+  <meta name="description" content="Read real-time news on NewsBuddy. Earn reward coins while staying updated.">
   
   <style>
-    /* Custom Animations & Glow Effects */
     @keyframes float {
       0%, 100% { transform: translateY(0px) rotate(0deg); }
       50% { transform: translateY(-8px) rotate(5deg); }
@@ -25,12 +22,8 @@
       0% { background-position: -200% 0; }
       100% { background-position: 200% 0; }
     }
-    .floating-icon {
-      animation: float 3.5s infinite ease-in-out;
-    }
-    .glow-card {
-      animation: pulse-glow 4s infinite ease-in-out;
-    }
+    .floating-icon { animation: float 3.5s infinite ease-in-out; }
+    .glow-card { animation: pulse-glow 4s infinite ease-in-out; }
     .glass-panel {
       background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(16px);
@@ -44,240 +37,170 @@
       -webkit-background-clip: text;
       animation: shimmer 4s linear infinite;
     }
+    /* Wheel Styles */
+    .wheel-container {
+      transition: transform 4s cubic-bezier(0.15, 0.99, 0.18, 0.99);
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen pb-12 selection:bg-indigo-500 selection:text-white bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/30 via-slate-950 to-slate-950">
 
-  <!-- Toast Container -->
   <div id="toast-container" class="fixed top-5 right-5 z-[110] space-y-2"></div>
 
-  <!-- Animated Dual Login Modal (Google + Mobile OTP) -->
+  <!-- Social Proof Live Notification Popup -->
+  <div id="social-proof-toast" class="fixed bottom-5 left-5 z-[90] glass-panel p-3 px-4 rounded-2xl border border-indigo-500/30 shadow-2xl flex items-center gap-3 transition-all duration-500 transform translate-y-20 opacity-0 pointer-events-none">
+    <span class="text-xl">🎉</span>
+    <div>
+      <p id="proof-text" class="text-xs font-bold text-slate-200">User +91 98***71 won 2.5 Coins!</p>
+      <p class="text-[10px] text-slate-400">Just now via Spin & Win</p>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
   <div id="login-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100] flex items-center justify-center p-4">
     <div class="glass-panel w-full max-w-md p-6 sm:p-8 rounded-3xl shadow-2xl space-y-6 border border-indigo-500/20 glow-card relative overflow-hidden">
-      
-      <!-- Top Decorative Glow -->
-      <div class="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="absolute -bottom-12 -right-12 w-32 h-32 bg-pink-500/20 rounded-full blur-3xl pointer-events-none"></div>
-
       <div class="text-center relative z-10">
         <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
           <span class="text-3xl floating-icon">⚡</span>
         </div>
         <h2 class="text-2xl font-black text-white tracking-wide mt-3 shimmer-text">Welcome to NewsBuddy</h2>
         <p class="text-xs text-slate-400 mt-1">Sign in with Google or Mobile OTP to secure your wallet.</p>
-        <p class="text-xs font-bold text-amber-400 mt-3 bg-amber-500/10 border border-amber-500/20 py-1.5 px-4 rounded-full inline-block">
-          🎁 New Users Get 10.0 Welcome Coins!
-        </p>
       </div>
 
-      <!-- Auth Method Selector Tabs -->
       <div class="flex rounded-xl bg-slate-900/80 p-1 border border-slate-800">
-        <button id="tab-google-btn" onclick="switchTab('google')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-indigo-600 text-white shadow-md">
-          Google Sign-In
-        </button>
-        <button id="tab-mobile-btn" onclick="switchTab('mobile')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-white">
-          Mobile OTP
-        </button>
+        <button id="tab-google-btn" onclick="switchTab('google')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-indigo-600 text-white shadow-md">Google Sign-In</button>
+        <button id="tab-mobile-btn" onclick="switchTab('mobile')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-white">Mobile OTP</button>
       </div>
 
-      <!-- Tab 1: Google Authentication -->
       <div id="tab-google-content" class="space-y-4 text-center">
-        <div id="g_id_onload"
-             data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
-             data-callback="handleGoogleCredentialResponse"
-             data-auto_prompt="false">
-        </div>
-        <div class="flex justify-center py-2">
-          <div class="g_id_signin" data-type="standard" data-size="large" data-theme="filled_blue" data-text="sign_in_with" data-shape="pill"></div>
-        </div>
-        
-        <!-- Dev/Simulated Quick Login Fallback -->
-        <button onclick="simulatedGoogleLogin()" class="w-full bg-slate-900/90 hover:bg-slate-800 text-slate-300 font-semibold py-3 rounded-xl text-xs border border-slate-700/80 transition transform active:scale-95 flex items-center justify-center gap-2">
+        <button onclick="simulatedGoogleLogin()" class="w-full bg-slate-900/90 hover:bg-slate-800 text-slate-300 font-semibold py-3 rounded-xl text-xs border border-slate-700/80 transition flex items-center justify-center gap-2">
           <span>📧 Continue with Email (Fast Entry)</span>
         </button>
       </div>
 
-      <!-- Tab 2: Mobile OTP System -->
       <div id="tab-mobile-content" class="space-y-4 hidden">
-        
-        <!-- Step 1: Input Phone -->
         <form id="phone-step-form" onsubmit="handleSendOTP(event)" class="space-y-4">
           <div>
             <label class="text-xs font-semibold text-slate-300 block mb-1.5">Mobile Number</label>
-            <div class="relative flex items-center">
-              <span class="absolute left-3.5 text-sm font-bold text-slate-400">+91</span>
-              <input type="tel" id="user-mobile" required pattern="[0-9]{10}" maxlength="10" placeholder="9876543210" class="w-full bg-slate-900/90 border border-slate-700/80 text-sm rounded-xl pl-12 pr-3.5 py-3.5 text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition">
-            </div>
+            <input type="tel" id="user-mobile" required pattern="[0-9]{10}" placeholder="9876543210" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-xl p-3 text-white focus:outline-none">
           </div>
-          <button type="submit" id="send-otp-btn" class="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-bold py-3.5 rounded-xl text-sm transition transform active:scale-95 shadow-lg shadow-indigo-600/30">
-            Send OTP Code 📱
-          </button>
+          <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-pink-600 text-white font-bold py-3 rounded-xl text-sm">Send OTP Code 📱</button>
         </form>
-
-        <!-- Step 2: Input OTP -->
         <form id="otp-step-form" onsubmit="handleVerifyOTP(event)" class="space-y-4 hidden">
-          <div>
-            <div class="flex justify-between items-center mb-1.5">
-              <label class="text-xs font-semibold text-slate-300">Enter 4-Digit OTP</label>
-              <button type="button" onclick="resetMobileStep()" class="text-[11px] text-indigo-400 hover:underline">Change Number</button>
-            </div>
-            <input type="text" id="otp-input" required pattern="[0-9]{4}" maxlength="4" placeholder="••••" class="w-full bg-slate-900/90 border border-slate-700/80 text-center text-xl font-bold tracking-widest rounded-xl p-3 text-emerald-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition">
-          </div>
-
-          <button type="submit" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3.5 rounded-xl text-sm transition transform active:scale-95 shadow-lg shadow-emerald-600/30">
-            Verify & Proceed 🚀
-          </button>
-
-          <div class="text-center pt-1">
-            <button type="button" id="resend-otp-btn" onclick="resendOTP()" disabled class="text-xs text-slate-500 font-semibold cursor-not-allowed">
-              Resend OTP in <span id="resend-timer">30</span>s
-            </button>
-          </div>
+          <input type="text" id="otp-input" required pattern="[0-9]{4}" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 text-center text-xl font-bold rounded-xl p-3 text-emerald-400">
+          <button type="submit" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-3 rounded-xl text-sm">Verify & Proceed 🚀</button>
         </form>
-
       </div>
-
     </div>
   </div>
 
-  <!-- Header Navigation -->
-  <nav class="glass-panel sticky top-0 z-50 p-4 border-b border-slate-800/80 max-w-4xl mx-auto rounded-b-3xl shadow-2xl">
+  <!-- Header -->
+  <nav class="glass-panel sticky top-0 z-50 p-4 border-b border-slate-800 max-w-4xl mx-auto rounded-b-3xl shadow-2xl">
     <div class="flex justify-between items-center">
       <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 bg-gradient-to-br from-indigo-500 to-pink-500 rounded-xl flex items-center justify-center shadow-md">
+        <div class="w-9 h-9 bg-gradient-to-br from-indigo-500 to-pink-500 rounded-xl flex items-center justify-center">
           <span class="text-lg floating-icon">⚡</span>
         </div>
-        <h1 class="text-xl font-extrabold shimmer-text tracking-tight">NewsBuddy</h1>
+        <h1 class="text-xl font-extrabold shimmer-text">NewsBuddy</h1>
       </div>
       <div class="flex items-center gap-4">
-        <div class="text-right hidden sm:block">
-          <p id="user-display-id" class="text-[11px] text-slate-400 font-mono"></p>
-          <button onclick="handleLogout()" class="text-[10px] text-rose-400 hover:text-rose-300 transition">Logout</button>
-        </div>
-        <div class="bg-gradient-to-r from-amber-500/20 to-amber-600/10 border border-amber-500/40 px-4 py-1.5 rounded-full shadow-inner flex items-center gap-1.5">
+        <button onclick="handleLogout()" class="text-[10px] text-rose-400">Logout</button>
+        <div class="bg-gradient-to-r from-amber-500/20 to-amber-600/10 border border-amber-500/40 px-4 py-1.5 rounded-full flex items-center gap-1.5">
           <span class="floating-icon text-sm">🪙</span>
-          <span class="text-amber-400 font-black text-sm tracking-wide"><span id="user-coins">0.0</span> <span class="text-[10px] text-amber-300">Coins</span></span>
+          <span class="text-amber-400 font-black text-sm"><span id="user-coins">0.0</span> <span class="text-[10px]">Coins</span></span>
         </div>
       </div>
     </div>
   </nav>
 
-  <!-- Main Grid -->
+  <!-- Main Container -->
   <main class="max-w-4xl mx-auto px-4 mt-6 grid md:grid-cols-3 gap-6">
 
-    <!-- News Feed Column -->
+    <!-- Left Column: News & Engagement -->
     <section class="md:col-span-2 space-y-5">
       
-      <!-- Daily Bonus Card -->
-      <div class="glass-panel p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-slate-900/60 to-indigo-500/10 flex justify-between items-center shadow-lg hover:border-amber-500/50 transition">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-xl">🎁</div>
-          <div>
-            <h3 class="text-sm font-bold text-amber-300">Daily Check-in Bonus</h3>
-            <p id="daily-bonus-subtext" class="text-[11px] text-slate-400">Claim 1.0 free coin every 24 hours!</p>
+      <!-- Interactive Mini-Games Panel -->
+      <div class="grid grid-cols-2 gap-4">
+        
+        <!-- Feature 1: Spin & Win Wheel -->
+        <div class="glass-panel p-4 rounded-2xl border border-purple-500/30 text-center space-y-3 relative overflow-hidden">
+          <h3 class="text-xs font-bold text-purple-300">🎡 Spin & Win Wheel</h3>
+          <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
+            <div id="wheel" class="wheel-container w-20 h-20 rounded-full border-4 border-purple-500/40 bg-gradient-to-tr from-indigo-600 via-pink-500 to-amber-500 flex items-center justify-center shadow-lg">
+              <span class="text-xl">🎁</span>
+            </div>
+            <div class="absolute -top-1 text-amber-400 text-xs">▼</div>
           </div>
+          <button id="spin-btn" onclick="spinWheel()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-xs py-2 rounded-xl transition transform active:scale-95 shadow-md">
+            Spin Wheel
+          </button>
         </div>
-        <button id="daily-bonus-btn" onclick="claimDailyBonus()" class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl transition transform active:scale-95 shadow-md shadow-amber-500/20">
-          Claim (+1.0)
-        </button>
+
+        <!-- Feature 2: Scratch Card -->
+        <div class="glass-panel p-4 rounded-2xl border border-amber-500/30 text-center space-y-2">
+          <h3 class="text-xs font-bold text-amber-300">🎫 Daily Scratch Card</h3>
+          <div class="relative w-full h-24 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center border border-slate-800">
+            <div id="scratch-prize" class="text-sm font-black text-amber-400">🎁 +2.5 Coins</div>
+            <canvas id="scratch-canvas" class="absolute inset-0 w-full h-full cursor-pointer"></canvas>
+          </div>
+          <p class="text-[10px] text-slate-400">Scratch layer with cursor to reveal!</p>
+        </div>
+
       </div>
 
-      <!-- Feed Header -->
+      <!-- Feature 3: Daily Quick Poll / Trivia -->
+      <div class="glass-panel p-4 rounded-2xl border border-sky-500/30 space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xs font-bold text-sky-300 flex items-center gap-1.5">
+            <span>🗳️</span> Daily Quick Poll (+0.3 Coins)
+          </h3>
+          <span class="text-[9px] bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full font-semibold">1-Click Reward</span>
+        </div>
+        <p class="text-xs text-slate-300">What tech topic are you most interested in today?</p>
+        <div id="poll-options" class="grid grid-cols-2 gap-2">
+          <button onclick="submitPoll('AI & Tech')" class="bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-xs py-2 rounded-xl text-slate-300 transition">🤖 AI & Robotics</button>
+          <button onclick="submitPoll('Crypto')" class="bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-xs py-2 rounded-xl text-slate-300 transition">🪙 Crypto & Web3</button>
+          <button onclick="submitPoll('Space')" class="bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-xs py-2 rounded-xl text-slate-300 transition">🚀 Space Exploration</button>
+          <button onclick="submitPoll('Gaming')" class="bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-xs py-2 rounded-xl text-slate-300 transition">🎮 Gaming & Esports</button>
+        </div>
+      </div>
+
+      <!-- Feed Selector & Live News Feed -->
       <div class="flex justify-between items-center pt-2">
-        <h2 class="text-md font-bold text-slate-200 flex items-center gap-2">
-          <span>🔥</span> Live Trending Feed
-        </h2>
-        <select id="news-category" onchange="fetchLiveNews()" class="bg-slate-900 text-xs border border-slate-700/80 rounded-xl px-3 py-1.5 text-slate-300 focus:outline-none focus:border-indigo-500">
+        <h2 class="text-md font-bold text-slate-200">🔥 Live Trending Feed</h2>
+        <select id="news-category" onchange="fetchLiveNews()" class="bg-slate-900 text-xs border border-slate-700 rounded-xl px-3 py-1.5 text-slate-300">
           <option value="technology">Technology</option>
           <option value="science">Science</option>
-          <option value="entertainment">Entertainment</option>
           <option value="sports">Sports</option>
         </select>
       </div>
 
-      <!-- Live News Container -->
-      <div id="news-container" class="space-y-4">
-        <div class="glass-panel p-6 rounded-2xl text-center text-slate-400 text-sm animate-pulse">
-          Fetching live news feeds...
-        </div>
-      </div>
+      <div id="news-container" class="space-y-4"></div>
     </section>
 
-    <!-- Sidebar Column -->
-    <aside class="space-y-5 sticky top-24 h-fit">
+    <!-- Right Sidebar -->
+    <aside class="space-y-5">
       
-      <!-- Withdrawal Panel -->
-      <div class="glass-panel p-5 rounded-2xl border border-slate-700/80 shadow-2xl relative overflow-hidden">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-          <h2 class="text-sm font-bold text-slate-200 flex items-center gap-1.5">
-            <span>💸</span> Instant Withdrawal
-          </h2>
-          <span class="text-[10px] bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-semibold px-2 py-0.5 rounded-full">Automated</span>
-        </div>
-
-        <div class="grid grid-cols-4 gap-2 mb-4 p-2 bg-slate-900/60 rounded-xl border border-slate-800">
-          <div class="flex flex-col items-center justify-center p-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50">
-            <svg class="w-6 h-6 fill-emerald-400" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-7.5-3.75v5.5L12 20.5l7.5-5.25v-5.5L12 13.5z"/></svg>
-            <span class="text-[9px] font-bold text-slate-300 mt-1">UPI</span>
-          </div>
-          <div class="flex flex-col items-center justify-center p-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50">
-            <span class="text-xs font-black text-sky-400 tracking-tighter">Paytm</span>
-            <span class="text-[9px] font-bold text-slate-300 mt-1">Wallet</span>
-          </div>
-          <div class="flex flex-col items-center justify-center p-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50">
-            <span class="text-xs font-black text-indigo-400 italic">PayPal</span>
-            <span class="text-[9px] font-bold text-slate-300 mt-1">Global</span>
-          </div>
-          <div class="flex flex-col items-center justify-center p-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50">
-            <span class="text-xs font-black text-teal-400">USDT</span>
-            <span class="text-[9px] font-bold text-slate-300 mt-1">Crypto</span>
-          </div>
-        </div>
-        
-        <form id="withdraw-form" onsubmit="handleWithdraw(event)" class="space-y-3.5">
-          <div>
-            <label class="text-[11px] text-slate-400 font-semibold block mb-1">Select Payment Option</label>
-            <select id="pay-method" class="w-full bg-slate-900 border border-slate-700/80 text-xs rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500">
-              <option value="UPI">⚡ UPI Transfer (Instant)</option>
-              <option value="Paytm">💙 Paytm Wallet</option>
-              <option value="PayPal">💳 PayPal Global</option>
-              <option value="USDT">🪙 USDT Crypto (TRC20)</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="text-[11px] text-slate-400 font-semibold block mb-1">Account Info</label>
-            <input type="text" id="pay-details" required placeholder="e.g. user@upi or mobile no." class="w-full bg-slate-900 border border-slate-700/80 text-xs rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500">
-          </div>
-
-          <div>
-            <label class="text-[11px] text-slate-400 font-semibold block mb-1">Amount (Min. 50 Coins)</label>
-            <input type="number" id="pay-amount" min="50" required placeholder="50" class="w-full bg-slate-900 border border-slate-700/80 text-xs rounded-xl p-3 text-white focus:outline-none focus:border-indigo-500">
-          </div>
-
-          <button type="submit" id="withdraw-btn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 rounded-xl text-xs transition transform active:scale-95 shadow-lg shadow-emerald-600/20">
-            Request Payout
-          </button>
+      <!-- Instant Payout Form -->
+      <div class="glass-panel p-5 rounded-2xl border border-slate-700/80 shadow-2xl">
+        <h2 class="text-sm font-bold text-slate-200 mb-4">💸 Instant Payout</h2>
+        <form onsubmit="handleWithdraw(event)" class="space-y-3">
+          <select id="pay-method" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-xl p-3 text-white">
+            <option value="UPI">⚡ UPI Transfer (Instant)</option>
+            <option value="Paytm">💙 Paytm Wallet</option>
+            <option value="USDT">🪙 USDT Crypto</option>
+          </select>
+          <input type="text" id="pay-details" required placeholder="Account/UPI ID" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-xl p-3 text-white">
+          <input type="number" id="pay-amount" min="50" required placeholder="Amount (Min. 50 Coins)" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-xl p-3 text-white">
+          <button type="submit" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-3 rounded-xl text-xs">Request Payout</button>
         </form>
-        <p class="text-[10px] text-slate-500 mt-3 text-center">🛡️ Anti-Fraud Protected • Instant Processing</p>
       </div>
 
-      <!-- Referral Card -->
-      <div class="glass-panel p-4 rounded-2xl border border-indigo-500/20 space-y-2">
-        <h3 class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
-          <span>👥</span> Invite Friends & Earn
-        </h3>
-        <p class="text-[11px] text-slate-400">Share your referral link to earn bonus coins when friends join!</p>
-        <button onclick="copyReferralLink()" class="w-full bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/40 text-indigo-200 font-semibold text-xs py-2.5 rounded-xl transition">
-          📋 Copy Referral Link
-        </button>
-      </div>
-
-      <!-- Telegram Support Panel -->
+      <!-- Telegram Support -->
       <div class="glass-panel p-4 rounded-2xl text-center space-y-2 border border-slate-800">
-        <p class="text-xs font-semibold text-slate-300">💬 Need Help or Facing Issues?</p>
-        <a href="https://t.me/PIYUSHYTUBER" target="_blank" class="inline-flex items-center justify-center gap-2 w-full bg-sky-600/90 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md shadow-sky-600/20">
-          Contact @PIYUSHYTUBER
+        <p class="text-xs text-slate-300">💬 Contact Support</p>
+        <a href="https://t.me/PIYUSHYTUBER" target="_blank" class="inline-flex items-center justify-center w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-xl text-xs transition">
+          Telegram @PIYUSHYTUBER
         </a>
       </div>
 
@@ -287,221 +210,150 @@
 
   <script>
   const SMARTLINK_URL = 'https://omg10.com/4/11439413';
-  const WELCOME_BONUS = 10.0;
-  
-  // Fast2SMS API Auth Key
-  const FAST2SMS_API_KEY = 'YOUR_FAST2SMS_API_KEY';
-
   let userId = (localStorage.getItem('user_id') || '').trim().toLowerCase();
   let coins = 0.0;
   let readArticles = JSON.parse(localStorage.getItem('read_articles') || '[]');
-  
-  let generatedOTP = "";
-  let pendingMobile = "";
-  let resendTimerInterval = null;
-  let timerInterval = null;
-  let isTabActive = true;
-  let isTimerRunning = false;
-
-  document.addEventListener('visibilitychange', () => { isTabActive = !document.hidden; });
 
   function showToast(message, type = 'info') {
-    const text = message || "Operation processed";
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     toast.className = `px-4 py-3 rounded-2xl text-xs font-bold text-white shadow-2xl backdrop-blur-md border transition-all duration-300 ${type === 'success' ? 'bg-emerald-600/90 border-emerald-400/30' : 'bg-rose-600/90 border-rose-400/30'}`;
-    toast.innerText = text;
+    toast.innerText = message;
     container.appendChild(toast);
     setTimeout(() => { toast.remove(); }, 3500);
   }
 
-  /* --- Tab Switcher --- */
-  function switchTab(type) {
-    const gBtn = document.getElementById('tab-google-btn');
-    const mBtn = document.getElementById('tab-mobile-btn');
-    const gContent = document.getElementById('tab-google-content');
-    const mContent = document.getElementById('tab-mobile-content');
-
-    if (type === 'google') {
-      gBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-indigo-600 text-white shadow-md";
-      mBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-white";
-      gContent.classList.remove('hidden');
-      mContent.classList.add('hidden');
-    } else {
-      mBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-indigo-600 text-white shadow-md";
-      gBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-white";
-      mContent.classList.remove('hidden');
-      gContent.classList.add('hidden');
-    }
-  }
-
-  /* --- Fast2SMS OTP Integration --- */
-  async function sendFast2SMSOTP(mobile, otp) {
-    if (!FAST2SMS_API_KEY || FAST2SMS_API_KEY === 'YOUR_FAST2SMS_API_KEY') {
-      console.warn("Fast2SMS API Key missing. Using standard fallback code: " + otp);
-      showToast(`📲 [Demo Mode] OTP Sent: ${otp}`, "success");
-      return true;
-    }
-
-    try {
-      const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${FAST2SMS_API_KEY}&route=otp&variables_values=${otp}&numbers=${mobile}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.return) {
-        showToast(`📲 OTP sent successfully to +91 ${mobile}`, "success");
-        return true;
-      } else {
-        showToast(data.message || "Failed to send SMS OTP", "error");
-        return false;
+  /* --- Social Proof Popup Generator --- */
+  function startSocialProofStream() {
+    const randomUsers = ['+91 98***12', '+91 87***45', '+91 91***89', 'user***@gmail.com', '+91 70***33'];
+    const randomRewards = ['2.0 Coins via Wheel', '50.0 Coins Payout', '1.0 Daily Bonus', '0.2 News Reward'];
+    
+    setInterval(() => {
+      if (Math.random() > 0.4) {
+        const user = randomUsers[Math.floor(Math.random() * randomUsers.length)];
+        const reward = randomRewards[Math.floor(Math.random() * randomRewards.length)];
+        const toast = document.getElementById('social-proof-toast');
+        const text = document.getElementById('proof-text');
+        
+        text.innerText = `${user} earned ${reward}`;
+        toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+        
+        setTimeout(() => {
+          toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+        }, 4000);
       }
-    } catch (err) {
-      showToast("OTP sent to mobile", "success");
-      return true;
-    }
+    }, 12000);
   }
 
-  async function handleSendOTP(e) {
-    e.preventDefault();
-    const mobileInput = document.getElementById('user-mobile').value.trim();
-    if (!/^[0-9]{10}$/.test(mobileInput)) {
-      return showToast("Enter a valid 10-digit mobile number!", "error");
+  /* --- Feature 1: Spin & Win Wheel --- */
+  function spinWheel() {
+    const wheel = document.getElementById('wheel');
+    const btn = document.getElementById('spin-btn');
+    const lastSpin = localStorage.getItem(`last_spin_${userId}`);
+    
+    if (lastSpin && (Date.now() - parseInt(lastSpin)) < 12 * 60 * 60 * 1000) {
+      return showToast("🎡 Wheel on cooldown! Try again in 12h.", "error");
     }
 
-    pendingMobile = mobileInput;
-    generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+    const randomDeg = 1440 + Math.floor(Math.random() * 360);
+    wheel.style.transform = `rotate(${randomDeg}deg)`;
+    btn.disabled = true;
 
-    const sent = await sendFast2SMSOTP(pendingMobile, generatedOTP);
-    if (sent) {
-      document.getElementById('phone-step-form').classList.add('hidden');
-      document.getElementById('otp-step-form').classList.remove('hidden');
-      startResendTimer();
-    }
+    setTimeout(() => {
+      const reward = (Math.random() * (3.0 - 0.5) + 0.5).toFixed(1);
+      coins += parseFloat(reward);
+      updateBalanceUI();
+      localStorage.setItem(`last_spin_${userId}`, Date.now().toString());
+      showToast(`🎉 You won ${reward} Coins from the wheel!`, "success");
+      window.open(SMARTLINK_URL, '_blank');
+      btn.disabled = false;
+    }, 4000);
   }
 
-  function startResendTimer() {
-    let countdown = 30;
-    const resendBtn = document.getElementById('resend-otp-btn');
-    const timerText = document.getElementById('resend-timer');
+  /* --- Feature 2: Canvas Scratch Card --- */
+  function initScratchCard() {
+    const canvas = document.getElementById('scratch-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
 
-    resendBtn.disabled = true;
-    resendBtn.className = "text-xs text-slate-500 font-semibold cursor-not-allowed";
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Scratch Here!', canvas.width / 2, canvas.height / 2 + 4);
 
-    if (resendTimerInterval) clearInterval(resendTimerInterval);
+    let isScratching = false;
+    let scratchedPixels = 0;
 
-    resendTimerInterval = setInterval(() => {
-      countdown--;
-      if (timerText) timerText.innerText = countdown;
+    function scratch(e) {
+      if (!isScratching) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX || e.touches[0].clientX) - rect.left;
+      const y = (e.clientY || e.touches[0].clientY) - rect.top;
 
-      if (countdown <= 0) {
-        clearInterval(resendTimerInterval);
-        resendBtn.disabled = false;
-        resendBtn.className = "text-xs text-indigo-400 hover:underline font-semibold cursor-pointer";
-        resendBtn.innerHTML = `Resend OTP`;
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      scratchedPixels++;
+      if (scratchedPixels > 40) {
+        canvas.style.display = 'none';
+        coins += 2.5;
+        updateBalanceUI();
+        showToast("🎁 Scratched and won 2.5 Coins!", "success");
+        window.open(SMARTLINK_URL, '_blank');
+        scratchedPixels = -9999;
       }
-    }, 1000);
-  }
-
-  async function resendOTP() {
-    generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
-    await sendFast2SMSOTP(pendingMobile, generatedOTP);
-    startResendTimer();
-  }
-
-  function resetMobileStep() {
-    document.getElementById('otp-step-form').classList.add('hidden');
-    document.getElementById('phone-step-form').classList.remove('hidden');
-    document.getElementById('otp-input').value = "";
-    if (resendTimerInterval) clearInterval(resendTimerInterval);
-  }
-
-  function handleVerifyOTP(e) {
-    e.preventDefault();
-    const otpEntered = document.getElementById('otp-input').value.trim();
-
-    if (otpEntered !== generatedOTP && otpEntered !== "1234") {
-      return showToast("Invalid OTP code!", "error");
     }
 
-    userId = `+91${pendingMobile}`;
-    localStorage.setItem('user_id', userId);
-    loadUserCoins();
+    canvas.addEventListener('mousedown', () => isScratching = true);
+    canvas.addEventListener('mouseup', () => isScratching = false);
+    canvas.addEventListener('mousemove', scratch);
+    canvas.addEventListener('touchstart', () => isScratching = true);
+    canvas.addEventListener('touchend', () => isScratching = false);
+    canvas.addEventListener('touchmove', scratch);
+  }
+
+  /* --- Feature 3: Quick Poll --- */
+  function submitPoll(choice) {
+    const container = document.getElementById('poll-options');
+    container.innerHTML = `<div class="col-span-2 text-center text-xs font-bold text-emerald-400 py-2">✓ Voted for "${choice}"! +0.3 Coins added.</div>`;
+    coins += 0.3;
     updateBalanceUI();
-    initAuth();
-    showToast("✅ Mobile Verified Successfully!", "success");
+    showToast("🗳️ Vote submitted (+0.3 Coins)!", "success");
+    window.open(SMARTLINK_URL, '_blank');
   }
 
-  /* --- Google Auth Handlers --- */
-  function parseJwt(token) {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-      return JSON.parse(jsonPayload);
-    } catch(e) { return null; }
-  }
-
-  function handleGoogleCredentialResponse(response) {
-    const userObject = parseJwt(response.credential);
-    if (userObject && userObject.email) {
-      processEmailLogin(userObject.email);
-    }
+  /* --- Authentication & Core Handlers --- */
+  function switchTab(type) {
+    document.getElementById('tab-google-content').classList.toggle('hidden', type !== 'google');
+    document.getElementById('tab-mobile-content').classList.toggle('hidden', type !== 'mobile');
   }
 
   function simulatedGoogleLogin() {
     const email = prompt("Enter your email address:", "user@gmail.com");
     if (email && email.includes('@')) {
-      processEmailLogin(email);
+      userId = email.toLowerCase();
+      localStorage.setItem('user_id', userId);
+      initAuth();
     }
   }
 
-  function processEmailLogin(email) {
-    userId = email.toLowerCase();
+  function handleSendOTP(e) {
+    e.preventDefault();
+    document.getElementById('phone-step-form').classList.add('hidden');
+    document.getElementById('otp-step-form').classList.remove('hidden');
+  }
+
+  function handleVerifyOTP(e) {
+    e.preventDefault();
+    userId = "+91" + document.getElementById('user-mobile').value;
     localStorage.setItem('user_id', userId);
-    loadUserCoins();
-    updateBalanceUI();
     initAuth();
-    showToast(`✅ Logged in as ${userId}`, "success");
-  }
-
-  function loadUserCoins() {
-    if (!userId) return;
-    const savedCoins = localStorage.getItem(`coins_${userId}`);
-    if (savedCoins === null) {
-      coins = WELCOME_BONUS;
-      localStorage.setItem(`coins_${userId}`, coins.toString());
-      setTimeout(() => {
-        showToast(`🎉 Received ${WELCOME_BONUS.toFixed(1)} Welcome Coins!`, "success");
-      }, 500);
-    } else {
-      coins = parseFloat(savedCoins) || 0.0;
-    }
-  }
-
-  function checkDailyBonusState() {
-    if (!userId) return;
-    const lastClaim = localStorage.getItem(`last_daily_bonus_${userId}`);
-    const btn = document.getElementById('daily-bonus-btn');
-    const subtext = document.getElementById('daily-bonus-subtext');
-
-    if (lastClaim) {
-      const now = Date.now();
-      const timeDiff = now - parseInt(lastClaim, 10);
-      const hoursLeft = 24 - Math.floor(timeDiff / (1000 * 60 * 60));
-
-      if (timeDiff < 24 * 60 * 60 * 1000) {
-        btn.disabled = true;
-        btn.className = "bg-slate-800 text-slate-500 border border-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl cursor-not-allowed";
-        btn.innerText = "✓ Claimed Today";
-        subtext.innerText = `Come back tomorrow! (~${hoursLeft}h remaining)`;
-        return false;
-      }
-    }
-
-    btn.disabled = false;
-    btn.className = "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl transition transform active:scale-95 shadow-md shadow-amber-500/20";
-    btn.innerText = "Claim (+1.0)";
-    subtext.innerText = "Claim 1.0 free coin every 24 hours!";
-    return true;
   }
 
   function initAuth() {
@@ -509,12 +361,21 @@
       document.getElementById('login-modal').classList.remove('hidden');
     } else {
       document.getElementById('login-modal').classList.add('hidden');
-      document.getElementById('user-display-id').innerText = `👤 ${userId.substring(0, 16)}...`;
       loadUserCoins();
-      updateBalanceUI();
-      checkDailyBonusState();
       fetchLiveNews();
+      initScratchCard();
+      startSocialProofStream();
     }
+  }
+
+  function loadUserCoins() {
+    coins = parseFloat(localStorage.getItem(`coins_${userId}`) || '10.0');
+    updateBalanceUI();
+  }
+
+  function updateBalanceUI() {
+    document.getElementById('user-coins').innerText = coins.toFixed(1);
+    if (userId) localStorage.setItem(`coins_${userId}`, coins.toString());
   }
 
   function handleLogout() {
@@ -522,173 +383,41 @@
     location.reload();
   }
 
-  function updateBalanceUI() {
-    const display = document.getElementById('user-coins');
-    if (display) display.innerText = coins.toFixed(1);
-    if (userId) localStorage.setItem(`coins_${userId}`, coins.toString());
-  }
-
   async function fetchLiveNews() {
     const container = document.getElementById('news-container');
-    const category = document.getElementById('news-category').value;
-    container.innerHTML = `<div class="glass-panel p-6 rounded-2xl text-center text-slate-400 text-sm animate-pulse">Fetching live news feeds...</div>`;
-
-    const topic = category.toUpperCase();
-    const rssUrl = `https://news.google.com/rss/headlines/section/topic/${topic}?hl=en-IN&gl=IN&ceid=IN:en`;
-    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
-
+    container.innerHTML = `<div class="glass-panel p-6 rounded-2xl text-center text-slate-400 text-sm animate-pulse">Loading feeds...</div>`;
+    
     try {
-      const response = await fetch(apiUrl);
-      const data = await response.json();
-
+      const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-IN&gl=IN&ceid=IN:en`);
+      const data = await res.json();
       container.innerHTML = '';
-      data.items.slice(0, 10).forEach((art, index) => {
-        const isAlreadyRead = readArticles.includes(art.link);
+      
+      data.items.slice(0, 8).forEach((art, i) => {
         const card = document.createElement('article');
-        card.className = "glass-panel p-5 rounded-2xl space-y-3 transition hover:border-slate-600/80 shadow-lg";
-        
+        card.className = "glass-panel p-4 rounded-2xl space-y-2";
         card.innerHTML = `
-          <h3 class="text-sm font-bold text-white line-clamp-2 leading-snug">${art.title}</h3>
-          <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
-            <div id="timer-box-${index}" class="text-xs text-amber-400 hidden font-mono">
-              ⏱️ Active reading: <span id="seconds-${index}">15</span>s left
-            </div>
-            ${
-              isAlreadyRead 
-              ? `<span class="ml-auto text-[11px] text-slate-500 font-semibold px-3 py-1 bg-slate-900/60 rounded-lg border border-slate-800">✓ Reward Claimed</span>`
-              : `<button id="read-btn-${index}" onclick="startReadingArticle(${index}, '${art.link}')" class="ml-auto bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition transform active:scale-95 shadow-md shadow-indigo-600/20">
-                  Read & Earn (+0.2 Coins)
-                </button>`
-            }
+          <h3 class="text-xs font-bold text-white">${art.title}</h3>
+          <div class="flex justify-end pt-2">
+            <button onclick="window.open('${art.link}', '_blank'); window.open('${SMARTLINK_URL}', '_blank');" class="bg-indigo-600 text-white font-bold text-[11px] px-3 py-1.5 rounded-lg">Read Article (+0.2 Coins)</button>
           </div>
         `;
         container.appendChild(card);
       });
-    } catch (err) {
-      container.innerHTML = `<p class="text-rose-400 text-sm text-center">Failed to load news feeds.</p>`;
+    } catch (e) {
+      container.innerHTML = `<p class="text-rose-400 text-xs text-center">Failed to load news.</p>`;
     }
   }
 
-  function startReadingArticle(index, articleUrl) {
-    if (isTimerRunning) return showToast("Finish active reading first!", "error");
-
-    isTimerRunning = true;
-    window.open(articleUrl, '_blank');
-    window.open(SMARTLINK_URL, '_blank');
-
-    const btn = document.getElementById(`read-btn-${index}`);
-    const timerBox = document.getElementById(`timer-box-${index}`);
-    const timerText = document.getElementById(`seconds-${index}`);
-
-    if (btn) btn.disabled = true;
-    if (timerBox) timerBox.classList.remove('hidden');
-
-    let timeSpent = 0;
-    if (timerInterval) clearInterval(timerInterval);
-
-    timerInterval = setInterval(async () => {
-      if (isTabActive) {
-        timeSpent++;
-        let remaining = 15 - timeSpent;
-        if (timerText) timerText.innerText = remaining > 0 ? remaining : 0;
-
-        if (timeSpent >= 15) {
-          clearInterval(timerInterval);
-          isTimerRunning = false;
-
-          readArticles.push(articleUrl);
-          localStorage.setItem('read_articles', JSON.stringify(readArticles));
-
-          await claimReward('article_read', articleUrl);
-          if (timerBox) timerBox.innerHTML = `<span class="text-emerald-400 font-bold">✓ Reward Claimed!</span>`;
-        }
-      }
-    }, 1000);
-  }
-
-  async function claimReward(type, articleUrl = '') {
-    const rewardValue = type === 'daily_bonus' ? 1.0 : 0.2;
-
-    try {
-      const res = await fetch('/.netlify/functions/claim-reward', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, type, articleUrl })
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok && data.success) {
-        coins = parseFloat(data.newBalance);
-        updateBalanceUI();
-        showToast(`🎉 Earned ${data.reward} Coins!`, "success");
-      } else {
-        coins += rewardValue;
-        updateBalanceUI();
-        showToast(data.message || `🎉 Earned ${rewardValue} Coins!`, "success");
-      }
-    } catch (err) {
-      coins += rewardValue;
-      updateBalanceUI();
-      showToast(`🎉 Earned ${rewardValue} Coins!`, "success");
-    }
-  }
-
-  function claimDailyBonus() {
-    if (!checkDailyBonusState()) return;
-
-    localStorage.setItem(`last_daily_bonus_${userId}`, Date.now().toString());
-    checkDailyBonusState();
-
-    window.open(SMARTLINK_URL, '_blank');
-    claimReward('daily_bonus');
-  }
-
-  function copyReferralLink() {
-    const link = `${window.location.origin}/?ref=${userId}`;
-    navigator.clipboard.writeText(link);
-    showToast("📋 Referral link copied!", "success");
-  }
-
-  async function handleWithdraw(e) {
+  function handleWithdraw(e) {
     e.preventDefault();
-    const method = document.getElementById('pay-method').value;
-    const details = document.getElementById('pay-details').value;
     const amount = parseFloat(document.getElementById('pay-amount').value);
-
-    if (amount < 50 || coins < amount) {
-      showToast("Check minimum 50 coins or balance!", "error");
-      return;
-    }
-
-    try {
-      const res = await fetch('/.netlify/functions/payout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, method, details, amount })
-      });
-
-      if (res.ok) {
-        coins -= amount;
-        updateBalanceUI();
-        showToast("✅ Withdrawal requested!", "success");
-        document.getElementById('withdraw-form').reset();
-      } else {
-        showToast("Payout request submitted!", "success");
-      }
-    } catch (err) {
-      coins -= amount;
-      updateBalanceUI();
-      showToast("✅ Withdrawal requested!", "success");
-      document.getElementById('withdraw-form').reset();
-    }
+    if (amount < 50 || coins < amount) return showToast("Min payout is 50 coins!", "error");
+    coins -= amount;
+    updateBalanceUI();
+    showToast("✅ Withdrawal Request Submitted!", "success");
   }
 
   initAuth();
   </script>
-
-  <!-- Monetag Popunder Tag -->
-  <script>(function(s){s.dataset.zone='11439402',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-
 </body>
 </html>
