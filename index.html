@@ -66,7 +66,7 @@
           <input type="number" id="pay-amount" min="50" required placeholder="50" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-2.5 text-white">
         </div>
 
-        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-sm transition">
+        <button type="submit" id="withdraw-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-sm transition">
           Request Payout
         </button>
       </form>
@@ -78,21 +78,20 @@
   <!-- Application Script -->
   <script>
   const SMARTLINK_URL = 'https://omg10.com/4/11439413';
+  let userId = localStorage.getItem('user_id') || ('user_' + Math.random().toString(36).substr(2, 9));
+  localStorage.setItem('user_id', userId);
+
   let coins = parseFloat(localStorage.getItem('user_coins')) || 0.0;
   let timerInterval = null;
   let isTabActive = true;
 
-  // Detect Active Tab Focus
-  document.addEventListener('visibilitychange', () => {
-    isTabActive = !document.hidden;
-  });
+  document.addEventListener('visibilitychange', () => { isTabActive = !document.hidden; });
 
   function updateBalanceUI() {
     document.getElementById('user-coins').innerText = coins.toFixed(1);
     localStorage.setItem('user_coins', coins.toString());
   }
 
-  // Fetch Live RSS News
   async function fetchLiveNews() {
     const container = document.getElementById('news-container');
     const category = document.getElementById('news-category').value;
@@ -129,12 +128,8 @@
     }
   }
 
-  // Read Article: Opens Real News Link + Monetag Smartlink
   function startReadingArticle(index, articleUrl) {
-    // 1. Open the actual news article link in a new tab
     window.open(articleUrl, '_blank');
-
-    // 2. Trigger Monetag Popunder / Smartlink in an additional tab
     window.open(SMARTLINK_URL, '_blank');
 
     const btn = document.getElementById(`read-btn-${index}`);
@@ -148,7 +143,6 @@
     let timeSpent = 0;
     if (timerInterval) clearInterval(timerInterval);
 
-    // 3. Active timer check (15 seconds reading)
     timerInterval = setInterval(() => {
       if (isTabActive) {
         timeSpent++;
@@ -164,17 +158,16 @@
     }, 1000);
   }
 
-  // Claim 0.5 Coins Reward
   function claimReward() {
-    const rewardAmount = 0.5;
-    coins += rewardAmount;
+    coins += 0.5;
     updateBalanceUI();
-    alert(`🎉 Earned ${rewardAmount} Coins!`);
+    alert(`🎉 Earned 0.5 Coins!`);
   }
 
-  // Process Withdrawal Form
-  function handleWithdraw(e) {
+  // Handle Withdrawal Request to Supabase + Telegram
+  async function handleWithdraw(e) {
     e.preventDefault();
+    const btn = document.getElementById('withdraw-btn');
     const method = document.getElementById('pay-method').value;
     const details = document.getElementById('pay-details').value;
     const amount = parseFloat(document.getElementById('pay-amount').value);
@@ -189,14 +182,34 @@
       return;
     }
 
-    coins -= amount;
-    updateBalanceUI();
+    btn.disabled = true;
+    btn.innerText = 'Processing...';
 
-    alert(`✅ Withdrawal request submitted for ${amount} Coins (${method}: ${details}).`);
-    document.getElementById('withdraw-form').reset();
+    try {
+      const response = await fetch('/.netlify/functions/payout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, method, details, amount })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        coins -= amount;
+        updateBalanceUI();
+        alert(`✅ Payout requested! Notification sent to admin via Telegram.`);
+        document.getElementById('withdraw-form').reset();
+      } else {
+        alert(data.message || "Payout failed.");
+      }
+    } catch (err) {
+      alert("Server error processing payout.");
+    } finally {
+      btn.disabled = false;
+      btn.innerText = 'Request Payout';
+    }
   }
 
-  // Initialize page
   updateBalanceUI();
   fetchLiveNews();
   </script>
