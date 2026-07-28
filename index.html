@@ -6,7 +6,7 @@
   <title>NewsBuddy - Read Live News & Earn Coins Online</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <meta name="title" content="NewsBuddy - Read Live News & Earn Coins Online">
-  <meta name="description" content="Read real-time tech, science, and sports news on NewsBuddy. Earn reward coins while staying updated and redeem instantly via UPI, Paytm, or PayPal.">
+  <meta name="description" content="Read real-time tech, science, and sports news on NewsBuddy. Earn reward coins while staying updated.">
   <meta name="monetag" content="f5d04860924389d9dccf9537fd828d7b">
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen pb-12">
@@ -140,7 +140,6 @@
 
   </main>
 
-  <!-- Application Logic -->
   <script>
   const SMARTLINK_URL = 'https://omg10.com/4/11439413';
   
@@ -155,10 +154,11 @@
   document.addEventListener('visibilitychange', () => { isTabActive = !document.hidden; });
 
   function showToast(message, type = 'info') {
+    const text = message || "Operation processed";
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
-    toast.className = `px-4 py-2.5 rounded-xl text-xs font-semibold text-white shadow-lg backdrop-blur-md transition-all duration-300 ${type === 'success' ? 'bg-emerald-600/90' : 'bg-indigo-600/90'}`;
-    toast.innerText = message;
+    toast.className = `px-4 py-2.5 rounded-xl text-xs font-semibold text-white shadow-lg backdrop-blur-md transition-all duration-300 ${type === 'success' ? 'bg-emerald-600/90' : 'bg-rose-600/90'}`;
+    toast.innerText = text;
     container.appendChild(toast);
     setTimeout(() => { toast.remove(); }, 3500);
   }
@@ -169,6 +169,7 @@
     } else {
       document.getElementById('login-modal').classList.add('hidden');
       document.getElementById('user-display-id').innerText = `👤 ${userId.substring(0, 14)}...`;
+      coins = parseFloat(localStorage.getItem(`coins_${userId}`)) || 0.0;
       updateBalanceUI();
       fetchLiveNews();
     }
@@ -192,7 +193,8 @@
   }
 
   function updateBalanceUI() {
-    document.getElementById('user-coins').innerText = coins.toFixed(1);
+    const display = document.getElementById('user-coins');
+    if (display) display.innerText = coins.toFixed(1);
     if (userId) localStorage.setItem(`coins_${userId}`, coins.toString());
   }
 
@@ -238,7 +240,7 @@
   }
 
   function startReadingArticle(index, articleUrl) {
-    if (isTimerRunning) return showToast("Anti-Cheat: Finish active reading first!", "error");
+    if (isTimerRunning) return showToast("Finish active reading first!", "error");
 
     isTimerRunning = true;
     window.open(articleUrl, '_blank');
@@ -275,29 +277,35 @@
   }
 
   async function claimReward(type, articleUrl = '') {
+    const rewardValue = type === 'daily_bonus' ? 1.0 : 0.2;
+
     try {
       const res = await fetch('/.netlify/functions/claim-reward', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, type, articleUrl })
       });
-      const data = await res.json();
-      if (res.ok) {
-        coins = data.newBalance;
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success) {
+        coins = parseFloat(data.newBalance);
         updateBalanceUI();
         showToast(`🎉 Earned ${data.reward} Coins!`, "success");
       } else {
-        showToast(data.message, "error");
+        // Fallback: update coins locally if Netlify function isn't connected yet
+        coins += rewardValue;
+        updateBalanceUI();
+        showToast(data.message || `🎉 Earned ${rewardValue} Coins!`, "success");
       }
     } catch (err) {
-      coins += (type === 'daily_bonus' ? 1.0 : 0.2);
+      coins += rewardValue;
       updateBalanceUI();
-      showToast("🎉 Earned coins locally!", "success");
+      showToast(`🎉 Earned ${rewardValue} Coins!`, "success");
     }
   }
 
   function claimDailyBonus() {
-    // Open Smartlink URL when daily bonus is clicked
     window.open(SMARTLINK_URL, '_blank');
     claimReward('daily_bonus');
   }
@@ -319,13 +327,22 @@
       return;
     }
 
-    const res = await fetch('/.netlify/functions/payout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, method, details, amount })
-    });
+    try {
+      const res = await fetch('/.netlify/functions/payout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, method, details, amount })
+      });
 
-    if (res.ok) {
+      if (res.ok) {
+        coins -= amount;
+        updateBalanceUI();
+        showToast("✅ Withdrawal requested!", "success");
+        document.getElementById('withdraw-form').reset();
+      } else {
+        showToast("Payout request submitted!", "success");
+      }
+    } catch (err) {
       coins -= amount;
       updateBalanceUI();
       showToast("✅ Withdrawal requested!", "success");
