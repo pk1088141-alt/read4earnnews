@@ -1,28 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Primary Meta Tags -->
-<title>NewsBuddy - Read Live News & Earn Coins Online</title>
-<meta name="title" content="NewsBuddy - Read Live News & Earn Coins Online">
-<meta name="description" content="Read real-time tech, science, and sports news on NewsBuddy. Earn reward coins while staying updated and redeem instantly via UPI, Paytm, or PayPal.">
-<meta name="keywords" content="read news and earn, earn coins online, newsbuddy, student rewards app, read and earn UPI cash, latest news rewards, earn money reading articles">
-<meta name="author" content="NewsBuddy">
-<meta name="robots" content="index, follow">
-
-<!-- Open Graph / Facebook / WhatsApp Share Tags -->
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://read4earnnews.netlify.app/">
-<meta property="og:title" content="NewsBuddy - Read Live News & Earn Coins">
-<meta property="og:description" content="Stay updated with student news and earn reward coins every time you read. Quick payout via UPI, Paytm & USDT!">
-
-<!-- Twitter Card Tags -->
-<meta property="twitter:card" content="summary_large_image">
-<meta property="twitter:url" content="https://read4earnnews.netlify.app/">
-<meta property="twitter:title" content="NewsBuddy - Read Live News & Earn Coins">
-<meta property="twitter:description" content="Stay updated with student news and earn reward coins every time you read. Quick payout via UPI, Paytm & USDT!">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NewsBuddy - Read Live News & Earn Coins Online</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="title" content="NewsBuddy - Read Live News & Earn Coins Online">
+  <meta name="description" content="Read real-time tech, science, and sports news on NewsBuddy. Earn reward coins while staying updated and redeem instantly via UPI, Paytm, or PayPal.">
+  <meta name="keywords" content="read news and earn, earn coins online, newsbuddy, student rewards app, read and earn UPI cash, latest news rewards, earn money reading articles">
   <meta name="monetag" content="f5d04860924389d9dccf9537fd828d7b">
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen pb-12">
@@ -59,36 +44,51 @@
       </div>
     </section>
 
-    <!-- Withdrawal Panel -->
-    <aside class="bg-slate-800 border border-slate-700 p-5 rounded-xl h-fit sticky top-24">
-      <h2 class="text-md font-bold text-slate-200 border-b border-slate-700 pb-2 mb-4">💸 Redeem Earnings</h2>
+    <!-- Sidebar Column -->
+    <aside class="space-y-4 sticky top-24 h-fit">
       
-      <form id="withdraw-form" onsubmit="handleWithdraw(event)" class="space-y-3">
-        <div>
-          <label class="text-xs text-slate-400 block mb-1">Withdraw Method</label>
-          <select id="pay-method" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-2.5 text-white">
-            <option value="UPI">UPI</option>
-            <option value="Paytm">Paytm</option>
-            <option value="PayPal">PayPal</option>
-            <option value="USDT">USDT</option>
-          </select>
-        </div>
+      <!-- Withdrawal Panel -->
+      <div class="bg-slate-800 border border-slate-700 p-5 rounded-xl">
+        <h2 class="text-md font-bold text-slate-200 border-b border-slate-700 pb-2 mb-4">💸 Redeem Earnings</h2>
+        
+        <form id="withdraw-form" onsubmit="handleWithdraw(event)" class="space-y-3">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Withdraw Method</label>
+            <select id="pay-method" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-2.5 text-white">
+              <option value="UPI">UPI</option>
+              <option value="Paytm">Paytm</option>
+              <option value="PayPal">PayPal</option>
+              <option value="USDT">USDT</option>
+            </select>
+          </div>
 
-        <div>
-          <label class="text-xs text-slate-400 block mb-1">Account Details (UPI ID / Email)</label>
-          <input type="text" id="pay-details" required placeholder="e.g. user@upi" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-2.5 text-white">
-        </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Account Details (UPI ID / Email)</label>
+            <input type="text" id="pay-details" required placeholder="e.g. user@upi" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-2.5 text-white">
+          </div>
 
-        <div>
-          <label class="text-xs text-slate-400 block mb-1">Amount (Min. 50 Coins)</label>
-          <input type="number" id="pay-amount" min="50" required placeholder="50" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-2.5 text-white">
-        </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Amount (Min. 50 Coins)</label>
+            <input type="number" id="pay-amount" min="50" required placeholder="50" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-2.5 text-white">
+          </div>
 
-        <button type="submit" id="withdraw-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-sm transition">
-          Request Payout
-        </button>
-      </form>
-      <p class="text-[11px] text-slate-500 mt-3 text-center">🛡️ Anti-Fraud Protected. Min. 50 Coins.</p>
+          <button type="submit" id="withdraw-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-sm transition">
+            Request Payout
+          </button>
+        </form>
+        <p class="text-[11px] text-slate-500 mt-3 text-center">🛡️ Anti-Fraud Protected. Min. 50 Coins.</p>
+      </div>
+
+      <!-- Telegram Contact Support Panel -->
+      <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl text-center space-y-2">
+        <p class="text-xs font-semibold text-slate-300">💬 Need Help or Facing Issues?</p>
+        <p class="text-[11px] text-slate-400">Contact admin directly on Telegram for fast withdrawal support.</p>
+        <a href="https://t.me/PIYUSHYTUBER" target="_blank" class="inline-flex items-center justify-center gap-1.5 w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-lg text-xs transition">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.16l-2.03 9.56c-.15.68-.56.84-1.13.52l-3.1-2.28-1.5 1.44c-.17.17-.31.31-.63.31l.22-3.16 5.76-5.2c.25-.22-.05-.34-.39-.12l-7.12 4.48-3.07-.96c-.67-.21-.68-.67.14-.99l12.01-4.63c.56-.21 1.05.13.84.87z"/></svg>
+          Contact @PIYUSHYTUBER
+        </a>
+      </div>
+
     </aside>
 
   </main>
