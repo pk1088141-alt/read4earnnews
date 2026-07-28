@@ -23,7 +23,7 @@
   <!-- Main Grid -->
   <main class="max-w-4xl mx-auto px-4 mt-6 grid md:grid-cols-3 gap-6">
 
-    <!-- News Feed -->
+    <!-- News Feed Column -->
     <section class="md:col-span-2 space-y-4">
       <div class="flex justify-between items-center mb-2">
         <h2 class="text-lg font-semibold text-slate-300">🔥 Live Student News</h2>
@@ -35,16 +35,9 @@
         </select>
       </div>
 
+      <!-- Container where live news is injected -->
       <div id="news-container" class="space-y-4">
         <p class="text-slate-400 text-sm">Loading latest news...</p>
-      </div>
-
-      <!-- Sponsor Banner -->
-      <div class="bg-gradient-to-r from-pink-900/30 to-purple-900/30 border border-pink-500/30 p-4 rounded-xl text-center">
-        <p class="text-sm font-medium text-pink-200 mb-2">🎁 Want Bonus Coins? Check Sponsor Offers!</p>
-        <button id="sponsor-btn" onclick="claimSponsorOffer(this)" class="inline-block bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition">
-          View Sponsor Offer (+2 Coins)
-        </button>
       </div>
     </section>
 
@@ -125,7 +118,7 @@
               ⏱️ Active reading: <span id="seconds-${index}">15</span>s left
             </div>
             <button id="read-btn-${index}" onclick="startReadingArticle(${index}, '${art.link}')" class="ml-auto bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-3.5 py-2 rounded-lg transition">
-              Read & Earn (+1.5 Coins)
+              Read & Earn (+0.5 Coins)
             </button>
           </div>
         `;
@@ -136,9 +129,12 @@
     }
   }
 
-  // Read Article & Trigger Ad Smartlink
+  // Read Article: Opens Real News Link + Monetag Smartlink
   function startReadingArticle(index, articleUrl) {
-    // 1. Open Monetag Smartlink/Ad page in a new tab
+    // 1. Open the actual news article link in a new tab
+    window.open(articleUrl, '_blank');
+
+    // 2. Trigger Monetag Popunder / Smartlink in an additional tab
     window.open(SMARTLINK_URL, '_blank');
 
     const btn = document.getElementById(`read-btn-${index}`);
@@ -152,7 +148,7 @@
     let timeSpent = 0;
     if (timerInterval) clearInterval(timerInterval);
 
-    // 2. Active timer check
+    // 3. Active timer check (15 seconds reading)
     timerInterval = setInterval(() => {
       if (isTabActive) {
         timeSpent++;
@@ -161,34 +157,22 @@
 
         if (timeSpent >= 15) {
           clearInterval(timerInterval);
-          claimReward('article_read');
+          claimReward();
           timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
         }
       }
     }, 1000);
   }
 
-  // Claim Sponsor Offer & Open Ad
-  function claimSponsorOffer(btn) {
-    btn.disabled = true;
-    window.open(SMARTLINK_URL, '_blank');
-    
-    claimReward('sponsor_offer');
-    
-    setTimeout(() => {
-      btn.disabled = false;
-    }, 30000);
-  }
-
-  // Claim Rewards Locally
-  function claimReward(rewardType) {
-    const rewardAmount = rewardType === 'sponsor_offer' ? 2.0 : 1.5;
+  // Claim 0.5 Coins Reward
+  function claimReward() {
+    const rewardAmount = 0.5;
     coins += rewardAmount;
     updateBalanceUI();
     alert(`🎉 Earned ${rewardAmount} Coins!`);
   }
 
-  // Process Withdrawal Form locally
+  // Process Withdrawal Form
   function handleWithdraw(e) {
     e.preventDefault();
     const method = document.getElementById('pay-method').value;
