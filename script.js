@@ -1,3 +1,6 @@
+const SUPABASE_URL = 'https://euhqeqqalrvluyzhuhlh.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1aHFlcXFhbHJ2bHV5emh1aGxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4NjQzNjksImV4cCI6MjEwMDQ0MDM2OX0.U3EbqQtmPy3bwJqg9DxogJUFBdKW3NRU0-Qnp-fabQU';                 // Replace with your anon key
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // Function to claim coins for reading or sponsor offers
 async function claimCoins(buttonElement, rewardType) {
     // 1. Immediately disable button to prevent multi-clicking
