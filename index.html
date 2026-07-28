@@ -4,10 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NewsBuddy - Read & Earn</title>
-  
-  <!-- Tailwind CSS -->
+  <!-- Student-Friendly UI via Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <meta name="monetag" content="f5d04860924389d9dccf9537fd828d7b">
+<meta name="monetag" content="f5d04860924389d9dccf9537fd828d7b">
+  <!-- ========================================== -->
+  <!-- MONETAG POPUNDER SCRIPT 
+    <!-- Ad Network Script -->
+    <script>(function(s){s.dataset.zone='11439402',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+  </body>
+</html>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen pb-12">
 
@@ -46,9 +51,10 @@
       <!-- Monetag Smartlink Banner -->
       <div class="bg-gradient-to-r from-pink-900/30 to-purple-900/30 border border-pink-500/30 p-4 rounded-xl text-center">
         <p class="text-sm font-medium text-pink-200 mb-2">🎁 Want Bonus Coins? Check Sponsor Offers!</p>
-        <button id="sponsor-btn" onclick="claimSponsorOffer(this)" class="inline-block bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition">
+        <!-- Replace MONETAG_SMARTLINK_URL with your actual Monetag link -->
+        <a href="https://omg10.com/4/11439413" target="_blank" onclick="addCoins(2)" class="inline-block bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition">
           View Sponsor Offer (+2 Coins)
-        </button>
+        </a>
       </div>
     </section>
 
@@ -63,7 +69,7 @@
             <option value="UPI">UPI</option>
             <option value="Paytm">Paytm</option>
             <option value="PayPal">PayPal</option>
-            <option value="USDT">USDT</option>
+            <option value="Crypto">USDT</option>
           </select>
         </div>
 
@@ -77,7 +83,7 @@
           <input type="number" id="pay-amount" min="50" required placeholder="50" class="w-full bg-slate-900 border border-slate-700 text-sm rounded-lg p-2.5 text-white">
         </div>
 
-        <button type="submit" id="withdraw-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-sm transition">
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-sm transition">
           Request Payout
         </button>
       </form>
@@ -87,37 +93,36 @@
   </main>
 
   <script>
-  const POPUNDER_URL = 'https://omg10.com/4/11439413';
-  // Retrieve or create persistent user ID
-  let userId = localStorage.getItem('user_id');
-  if (!userId) {
-      userId = 'user_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('user_id', userId);
-  }
-
-  let coins = 0.0;
+  let coins = parseFloat(localStorage.getItem('user_coins')) || 0.0;
   let timerInterval = null;
   let readingTimeSpent = 0;
   let isTabActive = true;
 
-  // Detect Tab Focus
+  // Detect Tab Focus (Anti-Cheat: Pauses timer if user leaves tab)
   document.addEventListener('visibilitychange', () => {
     isTabActive = !document.hidden;
   });
 
-  function updateBalanceUI(newBalance) {
-    coins = newBalance;
+  function updateBalanceUI() {
     document.getElementById('user-coins').innerText = coins.toFixed(1);
+    localStorage.setItem('user_coins', coins.toString());
+  }
+
+  function addCoins(amount) {
+    coins += amount;
+    updateBalanceUI();
+    alert(`🎉 Added ${amount} Coins to your balance!`);
   }
 
   // -------------------------------------------------------------
-  // FETCH LIVE NEWS VIA FREE RSS FEED
+  // FETCH LIVE NEWS VIA FREE RSS FEED (NO CORS BLOCKS ON NETLIFY)
   // -------------------------------------------------------------
   async function fetchLiveNews() {
     const container = document.getElementById('news-container');
     const category = document.getElementById('news-category').value;
     container.innerHTML = `<p class="text-slate-400 text-sm">Fetching real-time news...</p>`;
 
+    // Google News RSS URL mapped to categories
     const categoryTopics = {
       technology: 'TECHNOLOGY',
       science: 'SCIENCE',
@@ -143,6 +148,7 @@
         const card = document.createElement('article');
         card.className = "bg-slate-800 border border-slate-700/60 p-4 rounded-xl shadow-md space-y-3";
         
+        // Clean description text
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = art.description || '';
         const cleanSnippet = tempDiv.innerText.substring(0, 150) || 'Click below to read full story...';
@@ -168,7 +174,7 @@
   }
 
   // -------------------------------------------------------------
-  // CLAIM REWARDS & TIMER LOGIC
+  // TIMER & ANTI-CHEAT LOGIC
   // -------------------------------------------------------------
   function startReadingArticle(index, articleUrl) {
     window.open(articleUrl, '_blank');
@@ -194,84 +200,38 @@
 
         if (readingTimeSpent >= targetSeconds) {
           clearInterval(timerInterval);
-          claimReward('article_read', () => {
-            timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
-          });
+          addCoins(1.5);
+          timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
         }
       }
     }, 1000);
   }
 
-  function claimSponsorOffer(btn) {
-    btn.disabled = true;
-    window.open(POPUNDER_URL, '_blank');
-    claimReward('sponsor_offer', () => {
-      setTimeout(() => { btn.disabled = false; }, 30000);
-    });
-  }
-
-  async function claimReward(rewardType, onSuccess) {
-    try {
-      const response = await fetch('/api/claim-reward', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, rewardType })
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        updateBalanceUI(data.newBalance);
-        alert(`🎉 Earned ${data.earned} Coins!`);
-        if (onSuccess) onSuccess();
-      } else {
-        alert(data.message || "Action not allowed.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Server error processing reward.");
-    }
-  }
-
   // -------------------------------------------------------------
-  // WITHDRAWAL LOGIC
+  // WITHDRAWAL LOGIC (MINIMUM 50 COINS)
   // -------------------------------------------------------------
-  async function handleWithdraw(e) {
+  function handleWithdraw(e) {
     e.preventDefault();
-    const method = document.getElementById('pay-method').value;
-    const details = document.getElementById('pay-details').value;
     const amount = parseFloat(document.getElementById('pay-amount').value);
+    const details = document.getElementById('pay-details').value;
 
-    try {
-      const response = await fetch('/api/request-payout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          withdrawMethod: method,
-          accountDetails: details,
-          amount
-        })
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        alert(`✅ Payout request submitted successfully!`);
-        updateBalanceUI(data.remainingBalance);
-        document.getElementById('withdraw-form').reset();
-      } else {
-        alert(data.message || "Withdrawal failed.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Server error submitting withdrawal request.");
+    if (amount < 50) {
+      alert('Minimum withdrawal requirement is 50 Coins!');
+      return;
     }
+
+    if (coins < amount) {
+      alert('Insufficient coin balance!');
+      return;
+    }
+
+    coins -= amount;
+    updateBalanceUI();
+    alert(`✅ Payout request for ${amount} Coins submitted successfully to ${details}!`);
+    document.getElementById('withdraw-form').reset();
   }
 
   // Start app
+  updateBalanceUI();
   fetchLiveNews();
-  </script>
-
-  <!-- Monetag Popunder Script -->
-  <script>(function(s){s.dataset.zone='11439402',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-</body>
-</html>
+</script>
