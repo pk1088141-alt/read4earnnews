@@ -4,35 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NewsBuddy - Read & Earn</title>
-  <!-- Student-Friendly UI via Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-<meta name="monetag" content="f5d04860924389d9dccf9537fd828d7b">
-  <!-- ========================================== -->
-  <!-- MONETAG POPUNDER SCRIPT 
-    <!-- Ad Network Script -->
-    <script>(function(s){s.dataset.zone='11439402',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
- <script>(function(s){s.dataset.zone='11439402',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
-</body>
-</html>
+  <meta name="monetag" content="f5d04860924389d9dccf9537fd828d7b">
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen pb-12">
 
-  <!-- Header Section -->
+  <!-- Header -->
   <nav class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-50 flex justify-between items-center max-w-4xl mx-auto rounded-b-2xl shadow-lg">
     <div class="flex items-center gap-2">
       <span class="text-2xl">⚡</span>
       <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">NewsBuddy</h1>
     </div>
-    <!-- Wallet Balance -->
     <div class="bg-indigo-950 border border-indigo-500/30 px-4 py-1.5 rounded-full">
       <span class="text-amber-400 font-bold">🪙 <span id="user-coins">0.0</span> Coins</span>
     </div>
   </nav>
 
-  <!-- Main Container -->
+  <!-- Main Grid -->
   <main class="max-w-4xl mx-auto px-4 mt-6 grid md:grid-cols-3 gap-6">
 
-    <!-- News Feed Column -->
+    <!-- News Feed -->
     <section class="md:col-span-2 space-y-4">
       <div class="flex justify-between items-center mb-2">
         <h2 class="text-lg font-semibold text-slate-300">🔥 Live Student News</h2>
@@ -44,22 +35,20 @@
         </select>
       </div>
 
-      <!-- Container where live news will be injected -->
       <div id="news-container" class="space-y-4">
         <p class="text-slate-400 text-sm">Loading latest news...</p>
       </div>
 
-      <!-- Monetag Smartlink Banner -->
+      <!-- Sponsor Banner -->
       <div class="bg-gradient-to-r from-pink-900/30 to-purple-900/30 border border-pink-500/30 p-4 rounded-xl text-center">
         <p class="text-sm font-medium text-pink-200 mb-2">🎁 Want Bonus Coins? Check Sponsor Offers!</p>
-        <!-- Replace MONETAG_SMARTLINK_URL with your actual Monetag link -->
-        <a href="https://omg10.com/4/11439413" target="_blank" onclick="addCoins(2)" class="inline-block bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition">
+        <button id="sponsor-btn" onclick="claimSponsorOffer(this)" class="inline-block bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition">
           View Sponsor Offer (+2 Coins)
-        </a>
+        </button>
       </div>
     </section>
 
-    <!-- Cash Out Side Panel -->
+    <!-- Withdrawal Panel -->
     <aside class="bg-slate-800 border border-slate-700 p-5 rounded-xl h-fit sticky top-24">
       <h2 class="text-md font-bold text-slate-200 border-b border-slate-700 pb-2 mb-4">💸 Redeem Earnings</h2>
       
@@ -70,7 +59,7 @@
             <option value="UPI">UPI</option>
             <option value="Paytm">Paytm</option>
             <option value="PayPal">PayPal</option>
-            <option value="Crypto">USDT</option>
+            <option value="USDT">USDT</option>
           </select>
         </div>
 
@@ -94,44 +83,27 @@
   </main>
 
   <script>
-  let coins = parseFloat(localStorage.getItem('user_coins')) || 0.0;
+  const POPUNDER_URL = 'https://omg10.com/4/11439413';
+  let userId = localStorage.getItem('user_id') || ('user_' + Math.random().toString(36).substr(2, 9));
+  localStorage.setItem('user_id', userId);
+
+  let coins = 0.0;
   let timerInterval = null;
-  let readingTimeSpent = 0;
   let isTabActive = true;
 
-  // Detect Tab Focus (Anti-Cheat: Pauses timer if user leaves tab)
-  document.addEventListener('visibilitychange', () => {
-    isTabActive = !document.hidden;
-  });
+  document.addEventListener('visibilitychange', () => { isTabActive = !document.hidden; });
 
-  function updateBalanceUI() {
+  function updateBalanceUI(newBalance) {
+    coins = newBalance;
     document.getElementById('user-coins').innerText = coins.toFixed(1);
-    localStorage.setItem('user_coins', coins.toString());
   }
 
-  function addCoins(amount) {
-    coins += amount;
-    updateBalanceUI();
-    alert(`🎉 Added ${amount} Coins to your balance!`);
-  }
-
-  // -------------------------------------------------------------
-  // FETCH LIVE NEWS VIA FREE RSS FEED (NO CORS BLOCKS ON NETLIFY)
-  // -------------------------------------------------------------
   async function fetchLiveNews() {
     const container = document.getElementById('news-container');
     const category = document.getElementById('news-category').value;
     container.innerHTML = `<p class="text-slate-400 text-sm">Fetching real-time news...</p>`;
 
-    // Google News RSS URL mapped to categories
-    const categoryTopics = {
-      technology: 'TECHNOLOGY',
-      science: 'SCIENCE',
-      entertainment: 'ENTERTAINMENT',
-      sports: 'SPORTS'
-    };
-
-    const topic = categoryTopics[category] || 'TECHNOLOGY';
+    const topic = category.toUpperCase();
     const rssUrl = `https://news.google.com/rss/headlines/section/topic/${topic}?hl=en-IN&gl=IN&ceid=IN:en`;
     const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
 
@@ -139,25 +111,13 @@
       const response = await fetch(apiUrl);
       const data = await response.json();
 
-      if (!data.items || data.items.length === 0) {
-        container.innerHTML = `<p class="text-rose-400 text-sm">Unable to load news articles right now.</p>`;
-        return;
-      }
-
       container.innerHTML = '';
       data.items.slice(0, 10).forEach((art, index) => {
         const card = document.createElement('article');
         card.className = "bg-slate-800 border border-slate-700/60 p-4 rounded-xl shadow-md space-y-3";
         
-        // Clean description text
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = art.description || '';
-        const cleanSnippet = tempDiv.innerText.substring(0, 150) || 'Click below to read full story...';
-
         card.innerHTML = `
           <h3 class="text-md font-bold text-white line-clamp-2">${art.title}</h3>
-          <p class="text-slate-400 text-xs line-clamp-3">${cleanSnippet}...</p>
-          
           <div class="pt-2 border-t border-slate-700/50 flex justify-between items-center">
             <div id="timer-box-${index}" class="text-xs text-amber-400 hidden font-mono">
               ⏱️ Active reading: <span id="seconds-${index}">15</span>s left
@@ -169,17 +129,13 @@
         `;
         container.appendChild(card);
       });
-    } catch (error) {
-      container.innerHTML = `<p class="text-rose-400 text-sm">Error fetching news feeds.</p>`;
+    } catch (err) {
+      container.innerHTML = `<p class="text-rose-400 text-sm">Failed to load news.</p>`;
     }
   }
 
-  // -------------------------------------------------------------
-  // TIMER & ANTI-CHEAT LOGIC
-  // -------------------------------------------------------------
   function startReadingArticle(index, articleUrl) {
     window.open(articleUrl, '_blank');
-
     const btn = document.getElementById(`read-btn-${index}`);
     const timerBox = document.getElementById(`timer-box-${index}`);
     const timerText = document.getElementById(`seconds-${index}`);
@@ -188,51 +144,83 @@
     btn.classList.add('opacity-50', 'cursor-not-allowed');
     timerBox.classList.remove('hidden');
 
-    readingTimeSpent = 0;
-    const targetSeconds = 15;
-
+    let timeSpent = 0;
     if (timerInterval) clearInterval(timerInterval);
 
     timerInterval = setInterval(() => {
       if (isTabActive) {
-        readingTimeSpent++;
-        let remaining = targetSeconds - readingTimeSpent;
+        timeSpent++;
+        let remaining = 15 - timeSpent;
         timerText.innerText = remaining > 0 ? remaining : 0;
 
-        if (readingTimeSpent >= targetSeconds) {
+        if (timeSpent >= 15) {
           clearInterval(timerInterval);
-          addCoins(1.5);
-          timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
+          claimReward('article_read', () => {
+            timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
+          });
         }
       }
     }, 1000);
   }
 
-  // -------------------------------------------------------------
-  // WITHDRAWAL LOGIC (MINIMUM 50 COINS)
-  // -------------------------------------------------------------
-  function handleWithdraw(e) {
-    e.preventDefault();
-    const amount = parseFloat(document.getElementById('pay-amount').value);
-    const details = document.getElementById('pay-details').value;
-
-    if (amount < 50) {
-      alert('Minimum withdrawal requirement is 50 Coins!');
-      return;
-    }
-
-    if (coins < amount) {
-      alert('Insufficient coin balance!');
-      return;
-    }
-
-    coins -= amount;
-    updateBalanceUI();
-    alert(`✅ Payout request for ${amount} Coins submitted successfully to ${details}!`);
-    document.getElementById('withdraw-form').reset();
+  function claimSponsorOffer(btn) {
+    btn.disabled = true;
+    window.open(POPUNDER_URL, '_blank');
+    claimReward('sponsor_offer', () => {
+      setTimeout(() => { btn.disabled = false; }, 30000);
+    });
   }
 
-  // Start app
-  updateBalanceUI();
+  async function claimReward(rewardType, onSuccess) {
+    try {
+      const response = await fetch('/api/claim-reward', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, rewardType })
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        updateBalanceUI(data.newBalance);
+        if (onSuccess) onSuccess();
+      } else {
+        alert(data.message || "Action blocked.");
+      }
+    } catch (err) {
+      alert("Server error.");
+    }
+  }
+
+  async function handleWithdraw(e) {
+    e.preventDefault();
+    const method = document.getElementById('pay-method').value;
+    const details = document.getElementById('pay-details').value;
+    const amount = parseFloat(document.getElementById('pay-amount').value);
+
+    try {
+      const response = await fetch('/api/request-payout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, withdrawMethod: method, accountDetails: details, amount })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert(`✅ Payout requested! Notification sent to admin on Telegram.`);
+        updateBalanceUI(data.remainingBalance);
+        document.getElementById('withdraw-form').reset();
+      } else {
+        alert(data.message || "Payout failed.");
+      }
+    } catch (err) {
+      alert("Error submitting request.");
+    }
+  }
+
   fetchLiveNews();
-</script>
+  </script>
+
+  <!-- Monetag Popunder Tag -->
+  <script>(function(s){s.dataset.zone='11439402',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+</body>
+</html>
