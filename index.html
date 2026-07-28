@@ -91,137 +91,145 @@
   </main>
 
   <script>
-    // -------------------------------------------------------------
-    // CONFIGURATION
-    // -------------------------------------------------------------
-    const GNEWS_API_KEY = 'f79c4c065fb03cc88219a01a034950c3';
-    
-    let coins = parseFloat(localStorage.getItem('user_coins')) || 0.0;
-    let timerInterval = null;
-    let readingTimeSpent = 0;
-    let isTabActive = true;
+  let coins = parseFloat(localStorage.getItem('user_coins')) || 0.0;
+  let timerInterval = null;
+  let readingTimeSpent = 0;
+  let isTabActive = true;
 
-    // Detect Tab Switch (Anti-Cheat: Pauses timer if user leaves tab)
-    document.addEventListener('visibilitychange', () => {
-      isTabActive = !document.hidden;
-    });
+  // Detect Tab Focus (Anti-Cheat: Pauses timer if user leaves tab)
+  document.addEventListener('visibilitychange', () => {
+    isTabActive = !document.hidden;
+  });
 
-    function updateBalanceUI() {
-      document.getElementById('user-coins').innerText = coins.toFixed(1);
-      localStorage.setItem('user_coins', coins.toString());
-    }
+  function updateBalanceUI() {
+    document.getElementById('user-coins').innerText = coins.toFixed(1);
+    localStorage.setItem('user_coins', coins.toString());
+  }
 
-    function addCoins(amount) {
-      coins += amount;
-      updateBalanceUI();
-      alert(`🎉 Added ${amount} Coins to your balance!`);
-    }
-
-    // -------------------------------------------------------------
-    // FETCH NEWS DIRECTLY FROM GNEWS API
-    // -------------------------------------------------------------
-    async function fetchLiveNews() {
-      const container = document.getElementById('news-container');
-      const category = document.getElementById('news-category').value;
-      container.innerHTML = `<p class="text-slate-400 text-sm">Fetching real-time news...</p>`;
-
-      try {
-        const url = `https://gnews.io/api/v4/top-headlines?category=${category}&lang=en&max=8&apikey=${GNEWS_API_KEY}`;
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (!data.articles || data.articles.length === 0) {
-          container.innerHTML = `<p class="text-rose-400 text-sm">No news found or API quota exceeded.</p>`;
-          return;
-        }
-
-        container.innerHTML = '';
-        data.articles.forEach((art, index) => {
-          const card = document.createElement('article');
-          card.className = "bg-slate-800 border border-slate-700/60 p-4 rounded-xl shadow-md space-y-3";
-          
-          card.innerHTML = `
-            ${art.image ? `<img src="${art.image}" class="w-full h-40 object-cover rounded-lg" alt="News"/>` : ''}
-            <h3 class="text-md font-bold text-white line-clamp-2">${art.title}</h3>
-            <p class="text-slate-400 text-xs line-clamp-3">${art.description || 'Click below to read story.'}</p>
-            
-            <div class="pt-2 border-t border-slate-700/50 flex justify-between items-center">
-              <div id="timer-box-${index}" class="text-xs text-amber-400 hidden font-mono">
-                ⏱️ Active reading: <span id="seconds-${index}">15</span>s left
-              </div>
-              <button id="read-btn-${index}" onclick="startReadingArticle(${index}, '${art.url}')" class="ml-auto bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-3.5 py-2 rounded-lg transition">
-                Read & Earn (+1.5 Coins)
-              </button>
-            </div>
-          `;
-          container.appendChild(card);
-        });
-      } catch (error) {
-        container.innerHTML = `<p class="text-rose-400 text-sm">Error connecting to GNews API.</p>`;
-      }
-    }
-
-    // -------------------------------------------------------------
-    // TIMER & ANTI-CHEAT LOGIC
-    // -------------------------------------------------------------
-    function startReadingArticle(index, articleUrl) {
-      window.open(articleUrl, '_blank');
-
-      const btn = document.getElementById(`read-btn-${index}`);
-      const timerBox = document.getElementById(`timer-box-${index}`);
-      const timerText = document.getElementById(`seconds-${index}`);
-
-      btn.disabled = true;
-      btn.classList.add('opacity-50', 'cursor-not-allowed');
-      timerBox.classList.remove('hidden');
-
-      readingTimeSpent = 0;
-      const targetSeconds = 15;
-
-      if (timerInterval) clearInterval(timerInterval);
-
-      timerInterval = setInterval(() => {
-        if (isTabActive) {
-          readingTimeSpent++;
-          let remaining = targetSeconds - readingTimeSpent;
-          timerText.innerText = remaining > 0 ? remaining : 0;
-
-          if (readingTimeSpent >= targetSeconds) {
-            clearInterval(timerInterval);
-            addCoins(1.5);
-            timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
-          }
-        }
-      }, 1000);
-    }
-
-    // -------------------------------------------------------------
-    // WITHDRAWAL LOGIC (MINIMUM 50 COINS)
-    // -------------------------------------------------------------
-    function handleWithdraw(e) {
-      e.preventDefault();
-      const amount = parseFloat(document.getElementById('pay-amount').value);
-      const details = document.getElementById('pay-details').value;
-
-      if (amount < 50) {
-        alert('Minimum withdrawal requirement is 50 Coins!');
-        return;
-      }
-
-      if (coins < amount) {
-        alert('Insufficient coin balance!');
-        return;
-      }
-
-      coins -= amount;
-      updateBalanceUI();
-      alert(`✅ Payout request for ${amount} Coins submitted successfully to ${details}!`);
-      document.getElementById('withdraw-form').reset();
-    }
-
-    // Load initial balance and news
+  function addCoins(amount) {
+    coins += amount;
     updateBalanceUI();
-    fetchLiveNews();
-  </script>
-</body>
-</html>
+    alert(`🎉 Added ${amount} Coins to your balance!`);
+  }
+
+  // -------------------------------------------------------------
+  // FETCH LIVE NEWS VIA FREE RSS FEED (NO CORS BLOCKS ON NETLIFY)
+  // -------------------------------------------------------------
+  async function fetchLiveNews() {
+    const container = document.getElementById('news-container');
+    const category = document.getElementById('news-category').value;
+    container.innerHTML = `<p class="text-slate-400 text-sm">Fetching real-time news...</p>`;
+
+    // Google News RSS URL mapped to categories
+    const categoryTopics = {
+      technology: 'TECHNOLOGY',
+      science: 'SCIENCE',
+      entertainment: 'ENTERTAINMENT',
+      sports: 'SPORTS'
+    };
+
+    const topic = categoryTopics[category] || 'TECHNOLOGY';
+    const rssUrl = `https://news.google.com/rss/headlines/section/topic/${topic}?hl=en-IN&gl=IN&ceid=IN:en`;
+    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+
+    try {
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+
+      if (!data.items || data.items.length === 0) {
+        container.innerHTML = `<p class="text-rose-400 text-sm">Unable to load news articles right now.</p>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      data.items.slice(0, 10).forEach((art, index) => {
+        const card = document.createElement('article');
+        card.className = "bg-slate-800 border border-slate-700/60 p-4 rounded-xl shadow-md space-y-3";
+        
+        // Clean description text
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = art.description || '';
+        const cleanSnippet = tempDiv.innerText.substring(0, 150) || 'Click below to read full story...';
+
+        card.innerHTML = `
+          <h3 class="text-md font-bold text-white line-clamp-2">${art.title}</h3>
+          <p class="text-slate-400 text-xs line-clamp-3">${cleanSnippet}...</p>
+          
+          <div class="pt-2 border-t border-slate-700/50 flex justify-between items-center">
+            <div id="timer-box-${index}" class="text-xs text-amber-400 hidden font-mono">
+              ⏱️ Active reading: <span id="seconds-${index}">15</span>s left
+            </div>
+            <button id="read-btn-${index}" onclick="startReadingArticle(${index}, '${art.link}')" class="ml-auto bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-3.5 py-2 rounded-lg transition">
+              Read & Earn (+1.5 Coins)
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    } catch (error) {
+      container.innerHTML = `<p class="text-rose-400 text-sm">Error fetching news feeds.</p>`;
+    }
+  }
+
+  // -------------------------------------------------------------
+  // TIMER & ANTI-CHEAT LOGIC
+  // -------------------------------------------------------------
+  function startReadingArticle(index, articleUrl) {
+    window.open(articleUrl, '_blank');
+
+    const btn = document.getElementById(`read-btn-${index}`);
+    const timerBox = document.getElementById(`timer-box-${index}`);
+    const timerText = document.getElementById(`seconds-${index}`);
+
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    timerBox.classList.remove('hidden');
+
+    readingTimeSpent = 0;
+    const targetSeconds = 15;
+
+    if (timerInterval) clearInterval(timerInterval);
+
+    timerInterval = setInterval(() => {
+      if (isTabActive) {
+        readingTimeSpent++;
+        let remaining = targetSeconds - readingTimeSpent;
+        timerText.innerText = remaining > 0 ? remaining : 0;
+
+        if (readingTimeSpent >= targetSeconds) {
+          clearInterval(timerInterval);
+          addCoins(1.5);
+          timerBox.innerHTML = `<span class="text-emerald-400">✓ Reward Claimed!</span>`;
+        }
+      }
+    }, 1000);
+  }
+
+  // -------------------------------------------------------------
+  // WITHDRAWAL LOGIC (MINIMUM 50 COINS)
+  // -------------------------------------------------------------
+  function handleWithdraw(e) {
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById('pay-amount').value);
+    const details = document.getElementById('pay-details').value;
+
+    if (amount < 50) {
+      alert('Minimum withdrawal requirement is 50 Coins!');
+      return;
+    }
+
+    if (coins < amount) {
+      alert('Insufficient coin balance!');
+      return;
+    }
+
+    coins -= amount;
+    updateBalanceUI();
+    alert(`✅ Payout request for ${amount} Coins submitted successfully to ${details}!`);
+    document.getElementById('withdraw-form').reset();
+  }
+
+  // Start app
+  updateBalanceUI();
+  fetchLiveNews();
+</script>
